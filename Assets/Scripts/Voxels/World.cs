@@ -43,7 +43,7 @@ public class World : MonoBehaviour
     // This is to be optimized via greedy meshing
     // 
     // X, Y, Z
-    int3 WorldSize = new int3(16, 4, 16);
+    int3 WorldSize = new int3(8, 4, 8);
 
     // For loading purposes of old IJob code, each IJob increases value of this ushort by 1
     // When this gets around 70% of WorldSize X^Y^Z, proceed to rendering
@@ -101,7 +101,7 @@ public class World : MonoBehaviour
                     //if (WorldSize.x > 8 || WorldSize.y > 8 || WorldSize.z > 8)
                     //{
                     delay++;
-                    if (delay > WorldSize.y*4)
+                    if (delay > WorldSize.y*(WorldSize.z/2))
                     {
                         delay = 0;
                         yield return new WaitForEndOfFrame();

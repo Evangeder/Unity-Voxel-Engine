@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using System.Linq;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -44,6 +45,8 @@ public class Chunk : MonoBehaviour
     NativeList<Vector3> verts;
     NativeList<int> tris;
     NativeList<Vector2> uv;
+    NativeList<Vector3> March_verts;
+    NativeList<int> March_tris;
     private bool IsGenerating = false;
     private bool IsRendering = false;
 
@@ -148,6 +151,8 @@ public class Chunk : MonoBehaviour
         if (blocktypes.IsCreated) blocktypes.Dispose();
         if (verts.IsCreated) verts.Dispose();
         if (tris.IsCreated) tris.Dispose();
+        if (March_verts.IsCreated) March_verts.Dispose();
+        if (March_tris.IsCreated) March_tris.Dispose();
         if (uv.IsCreated) uv.Dispose();
     }
 
@@ -167,9 +172,15 @@ public class Chunk : MonoBehaviour
             IsRendering = false;
             Render_JobHandle.Complete();
 
+            filter.mesh.Clear();
+            filter.mesh.subMeshCount = 2;
+
             filter.mesh.vertices = verts.ToArray();
-            filter.mesh.triangles = tris.ToArray();
-            filter.mesh.uv = uv.ToArray();
+            filter.mesh.SetTriangles(tris.ToArray(), 0);
+            filter.mesh.SetTriangles(March_tris.ToArray(), 1);
+            Vector2[] uvs = uv.ToArray();
+            System.Array.Resize(ref uvs, verts.Length);
+            filter.mesh.uv = uvs;
             filter.mesh.MarkDynamic();
             filter.mesh.RecalculateNormals();
 
@@ -177,7 +188,7 @@ public class Chunk : MonoBehaviour
 
             Mesh mesh = new Mesh();
             mesh.vertices = verts.ToArray();
-            mesh.triangles = tris.ToArray();
+            mesh.triangles = tris.ToArray().Concat(March_tris.ToArray()).ToArray();
             mesh.MarkDynamic();
             mesh.RecalculateNormals();
 
@@ -225,6 +236,9 @@ public class Chunk : MonoBehaviour
             tris = new NativeList<int>(Allocator.TempJob);
             uv = new NativeList<Vector2>(Allocator.TempJob);
 
+            March_verts = new NativeList<Vector3>(Allocator.TempJob);
+            March_tris = new NativeList<int>(Allocator.TempJob);
+
             NativeArray<bool> GreedyBlocks_U = new NativeArray<bool>(4096, Allocator.TempJob);
             NativeArray<bool> GreedyBlocks_D = new NativeArray<bool>(4096, Allocator.TempJob);
             NativeArray<bool> GreedyBlocks_N = new NativeArray<bool>(4096, Allocator.TempJob);
@@ -232,30 +246,67 @@ public class Chunk : MonoBehaviour
             NativeArray<bool> GreedyBlocks_E = new NativeArray<bool>(4096, Allocator.TempJob);
             NativeArray<bool> GreedyBlocks_W = new NativeArray<bool>(4096, Allocator.TempJob);
 
+            NativeArray<int> T_CubeEdgeFlags = new NativeArray<int>(MarchingCubesTables.CubeEdgeFlags.Length, Allocator.TempJob);
+            T_CubeEdgeFlags.CopyFrom(MarchingCubesTables.CubeEdgeFlags);
 
+            NativeArray<int> T_EdgeConnection = new NativeArray<int>(MarchingCubesTables.EdgeConnection.Length, Allocator.TempJob);
+            T_EdgeConnection.CopyFrom(MarchingCubesTables.EdgeConnection);
+
+            NativeArray<float> T_EdgeDirection = new NativeArray<float>(MarchingCubesTables.EdgeDirection.Length, Allocator.TempJob);
+            T_EdgeDirection.CopyFrom(MarchingCubesTables.EdgeDirection);
+
+            NativeArray<int> T_TriangleConnectionTable = new NativeArray<int>(MarchingCubesTables.TriangleConnectionTable.Length, Allocator.TempJob);
+            T_TriangleConnectionTable.CopyFrom(MarchingCubesTables.TriangleConnectionTable);
+
+            NativeArray<int> T_VertexOffset = new NativeArray<int>(MarchingCubesTables.VertexOffset.Length, Allocator.TempJob);
+            T_VertexOffset.CopyFrom(MarchingCubesTables.VertexOffset);
+            
             var job = new Job_RenderChunk()
             {
+                // TILING SIZE FOR TEXTURING
                 tileSize = BlockData.BlockTileSize,
+
+                chunkSize = chunkSize,
+
+                // BLOCKDATA
+                blocktype = blocktypes,
+
+                // STANDART VOXEL MESHDATA
                 vertices = verts,
                 triangles = tris,
                 uvs = uv,
+
+                // BLOCKS OF TARGET AND NEIGHBOUR CHUNKS
                 _blocks = Native_blocks2,
-                _blocks_greedy_U = GreedyBlocks_U,
-                _blocks_greedy_D = GreedyBlocks_D,
-                _blocks_greedy_N = GreedyBlocks_N,
-                _blocks_greedy_S = GreedyBlocks_S,
-                _blocks_greedy_E = GreedyBlocks_E,
-                _blocks_greedy_W = GreedyBlocks_W,
-                blocktype = blocktypes,
                 _blocks_MinusX = Chunk_MinusX,
                 _blocks_MinusY = Chunk_MinusY,
                 _blocks_MinusZ = Chunk_MinusZ,
                 _blocks_PlusX = Chunk_PlusX,
                 _blocks_PlusY = Chunk_PlusY,
                 _blocks_PlusZ = Chunk_PlusZ,
-                UseMarchingCubes = false,
-                UseGreedyMeshing = true
-            };
+
+                // USE GREEDY MESHING ON STANDART VOXELS (EXPERIMENTAL)
+                UseGreedyMeshing = true,
+                // GREEDY MESHING FACE FLAGS
+                _blocks_greedy_U = GreedyBlocks_U,
+                _blocks_greedy_D = GreedyBlocks_D,
+                _blocks_greedy_N = GreedyBlocks_N,
+                _blocks_greedy_S = GreedyBlocks_S,
+                _blocks_greedy_E = GreedyBlocks_E,
+                _blocks_greedy_W = GreedyBlocks_W,
+
+                // MARCHING CUBES
+                UseMarchingCubes = true,
+                Table_CubeEdgeFlags = T_CubeEdgeFlags,
+                Table_EdgeConnection = T_EdgeConnection,
+                Table_EdgeDirection = T_EdgeDirection,
+                Table_TriangleConnection = T_TriangleConnectionTable,
+                Table_VertexOffset = T_VertexOffset,
+                Marching_triangles = March_tris,
+                Marching_vertices = March_verts,
+                MarchedBlocks = new NativeArray<float>(4913, Allocator.TempJob)
+
+        };
 
             Render_JobHandle = job.Schedule();
             IsRendering = true;
@@ -264,18 +315,28 @@ public class Chunk : MonoBehaviour
 
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     private struct Job_RenderChunk : IJob
     {
+        public int chunkSize;
+
+        // MeshData to return
         public NativeList<Vector3> vertices;
         public NativeList<int> triangles;
         public NativeList<Vector2> uvs;
-        
+
+        // MeshData for Marching Cubes terrain
+        public NativeList<Vector3> Marching_vertices;
+        public NativeList<int> Marching_triangles;
+
+        // Size of a tile for texturing
         [ReadOnly] public float tileSize;
 
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks;
+        // Blocktype data
         [ReadOnly] public NativeArray<Block> blocktype;
 
+        // Block arrays from THIS chunk + neighbour chunks
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusX;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusX;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusY;
@@ -283,6 +344,7 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusZ;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusZ;
         
+        // Greedy flag for every direction of block
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_U;
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_D;
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_N;
@@ -291,26 +353,47 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_W;
 
         // RENDERING OPTIONS
-        [ReadOnly] public bool UseGreedyMeshing;
+        [ReadOnly] public bool UseGreedyMeshing; //TODO: Fix texturing (it's all stretched now)
         [ReadOnly] public bool UseMarchingCubes;
 
+        // MARCHING CUBES, Define this ONLY if you want to perform marching, otherwise, don't.
+        [DeallocateOnJobCompletion] public NativeArray<float> MarchedBlocks;
+
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_EdgeConnection;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<float> Table_EdgeDirection;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_CubeEdgeFlags;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_TriangleConnection;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_VertexOffset;
         public void Execute()
         {
+            if (UseMarchingCubes) {
+                
+                //MarchedBlocks_Water = new NativeArray<float>(_blocks.Length, Allocator.TempJob);
+            }
+
             Block tbmx, tbpx, tbmy, tbpy, tbmz, tbpz, tb;
             //Block g_tbmx, g_tbpx, g_tbmy, g_tbpy, g_tbmz, g_tbpz;
-            for (int x = 0; x < 16; x++)
+            int x, y, z;
+            for (x = 0; x < 16; x++)
             {
-                for (int y = 0; y < 16; y++)
+                for (y = 0; y < 16; y++)
                 {
-                    for (int z = 0; z < 16; z++)
+                    for (z = 0; z < 16; z++)
                     {
                         if (_blocks[x + y * 16 + z * 256].GetID != 0) {
                             if (_blocks[x + y * 16 + z * 256].GetID == 1) {
                                 // TERRAIN ( Marching Cubes )
-
+                                if (UseMarchingCubes)
+                                {
+                                    // TODO: Think of changing the 1f value to random OR average of neighbour 3-4 blocks
+                                    MarchedBlocks[x + y * 16 + z * 256] = 1f;
+                                }
                             } else if (_blocks[x + y * 16 + z * 256].GetID == 2) {
                                 // WATER
-
+                                if (UseMarchingCubes)
+                                {
+                                    //MarchedBlocks_Water[x + y * 16 + z * 256] = 1f;
+                                }
                             } else if (_blocks[x + y * 16 + z * 256].GetID > 10) {
                                 if (x == 0) tbmx = _blocks_MinusX[15 + y * 16 + z * 256]; else tbmx = _blocks[x-1 + y * 16 + z * 256];
                                 if (x == 15) tbpx = _blocks_PlusX[y * 16 + z * 256]; else tbpx = _blocks[x+1 + y * 16 + z * 256];
@@ -810,6 +893,101 @@ public class Chunk : MonoBehaviour
                     }
                 }
             }
+            // MARCHING CUBES HERE
+            if (UseMarchingCubes)
+            {
+                float Surface = 0.5f;
+                NativeArray<float> Cube = new NativeArray<float>(8, Allocator.Temp);
+                NativeArray<int> WindingOrder = new NativeArray<int>(3, Allocator.Temp);
+                WindingOrder[0] = 0;
+                WindingOrder[1] = 1;
+                WindingOrder[2] = 2;
+
+                if (Surface > 0.0f)
+                {
+                    WindingOrder[0] = 0;
+                    WindingOrder[1] = 1;
+                    WindingOrder[2] = 2;
+                }
+                else
+                {
+                    WindingOrder[0] = 2;
+                    WindingOrder[1] = 1;
+                    WindingOrder[2] = 0;
+                }
+
+                int i, ix, iy, iz, i2, j, vert, idx;
+
+                for (x = 0; x < chunkSize - 1; x++)
+                {
+                    for (y = 0; y < chunkSize - 1; y++)
+                    {
+                        for (z = 0; z < chunkSize - 1; z++)
+                        {
+                            //Get the values in the 8 neighbours which make up a cube
+                            for (i = 0; i < 8; i++)
+                            {
+                                ix = x + Table_VertexOffset[i*3 + 0];
+                                iy = y + Table_VertexOffset[i*3 + 1];
+                                iz = z + Table_VertexOffset[i*3 + 2];
+
+                                Cube[i] = MarchedBlocks[ix + iy * chunkSize + iz * chunkSize * chunkSize];
+                            }
+
+                            //Perform algorithm
+                            NativeArray<float3> EdgeVertex = new NativeArray<float3>(12, Allocator.Temp);
+                            //Vector3[] EdgeVertex = new Vector3[12];
+                            
+                            int flagIndex = 0;
+                            float offset = 0.0f;
+
+                            //Find which vertices are inside of the surface and which are outside
+                            for (i2 = 0; i2 < 8; i2++) if (Cube[i2] <= Surface) flagIndex |= 1 << i2;
+
+                            //Find which edges are intersected by the surface
+                            int edgeFlags = Table_CubeEdgeFlags[flagIndex];
+
+                            //If the cube is entirely inside or outside of the surface, then there will be no intersections
+                            if (edgeFlags != 0)
+                            {
+
+                                //Find the point of intersection of the surface with each edge
+                                for (i2 = 0; i2 < 12; i2++)
+                                {
+                                    //if there is an intersection on this edge
+                                    if ((edgeFlags & (1 << i2)) != 0)
+                                    {
+                                        float delta = Cube[Table_EdgeConnection[i2 * 2 + 1]] - Cube[Table_EdgeConnection[i2 * 2 + 0]];
+
+                                        offset = (delta == 0.0f) ? Surface : (Surface - Cube[Table_EdgeConnection[i2 * 2 + 0]]) / delta;
+                                        float3 EV = new float3(x + (Table_VertexOffset[Table_EdgeConnection[i2 * 2 + 0] * 3 + 0] + offset * Table_EdgeDirection[i2 * 3 + 0]),
+                                            y + (Table_VertexOffset[Table_EdgeConnection[i2 * 2 + 0] * 3 + 1] + offset * Table_EdgeDirection[i2 * 3 + 1]),
+                                            z + (Table_VertexOffset[Table_EdgeConnection[i2 * 2 + 0] * 3 + 2] + offset * Table_EdgeDirection[i2 * 3 + 2]));
+                                        EdgeVertex[i2] = EV;
+                                    }
+                                }
+
+                                //Save the triangles that were found. There can be up to five per cube
+                                for (i2 = 0; i2 < 5; i2++)
+                                {
+                                    if (Table_TriangleConnection[flagIndex * 16 + (3 * i2)] < 0) break;
+
+                                    idx = vertices.Length;
+
+                                    for (j = 0; j < 3; j++)
+                                    {
+                                        vert = Table_TriangleConnection[flagIndex * 16 + (3 * i2 + j)];
+                                        Marching_triangles.Add(idx + WindingOrder[j]);
+                                        vertices.Add(EdgeVertex[vert]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            // END OF MARCHING CUBES
         }
     }
 
@@ -1016,11 +1194,11 @@ public class Chunk : MonoBehaviour
                     {
                         //set blocks
                         int test = random.NextInt(-2, 2);
-                        if (ChunkCoordinates.y + y == 25)
+                        if (ChunkCoordinates.y + y == 25 + test)
                         {
-                            _blocksNew[x + y * 16 + z * 256] = blocktype[12];
+                            _blocksNew[x + y * 16 + z * 256] = blocktype[1];
                         }
-                        else if (ChunkCoordinates.y + y < 25)
+                        else if (ChunkCoordinates.y + y < 25 + test)
                         {
                             _blocksNew[x + y * 16 + z * 256] = blocktype[13];
                         }

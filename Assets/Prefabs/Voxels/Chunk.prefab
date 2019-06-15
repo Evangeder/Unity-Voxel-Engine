@@ -122,6 +122,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: ce6988209b0bebd4282fb8da35db9563, type: 2}
+  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -173,7 +174,6 @@ MonoBehaviour:
     x: 0
     y: 0
     z: 0
-  blocks: 0000000000000000000000000000000000000000000000000000000000000000000000000000
   Chunk_Water: {fileID: 113628928192044896}
   Chunk_Smoothed: {fileID: 2079412560123638875}
   MarchingCubesSmoothness: 1

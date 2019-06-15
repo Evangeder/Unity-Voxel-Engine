@@ -118,6 +118,17 @@ public static class BlockData
 public static class MarchingCubesTables
 {
     /// <summary>
+    /// VertexOffset lists the positions, relative to vertex0, 
+    /// of each of the 8 vertices of a cube.
+    /// vertexOffset[8][3]
+    /// </summary>
+    public static readonly int[] VertexOffset = new int[]
+    {
+            0, 0, 0,   1, 0, 0,     1, 1, 0,    0, 1, 0,
+            0, 0, 1,   1, 0, 1,     1, 1, 1,    0, 1, 1
+    };
+
+    /// <summary>
     /// EdgeConnection lists the index of the endpoint vertices for each 
     /// of the 12 edges of the cube.
     /// edgeConnection[12][2]
