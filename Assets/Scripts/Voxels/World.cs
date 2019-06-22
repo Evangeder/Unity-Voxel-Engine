@@ -57,6 +57,8 @@ public class World : MonoBehaviour
     //TEMP
     public GameObject GUI_MapLoadingOverlay;
     public UnityEngine.UI.Text GUI_MapLoadingText;
+    public UnityEngine.UI.Text GUI_DebugBlockPlaceText;
+
 
     #region "Create blockdata to work with"
 
@@ -97,7 +99,8 @@ public class World : MonoBehaviour
             {
                 for (int y = 0; y <= WorldSize.y; y++)
                 {
-                    CreateChunk(x * Chunk.chunkSize, y * Chunk.chunkSize, z * Chunk.chunkSize, true);
+                    CreateChunk(x * Chunk.chunkSize, y * Chunk.chunkSize, z * Chunk.chunkSize, false);
+                    GeneratedChunks += 1;
                     //if (WorldSize.x > 8 || WorldSize.y > 8 || WorldSize.z > 8)
                     //{
                     delay++;
@@ -140,6 +143,27 @@ public class World : MonoBehaviour
                 }
             }
         }
+
+        delay = 0;
+
+        for (int y1 = 0; y1 < 26; y1++)
+        {
+            for (int x1 = 0; x1 < 32; x1++)
+            {
+                for (int z1 = 0; z1 < 32; z1++)
+                {
+                    GUI_DebugBlockPlaceText.text = "Placing Block 1 (Marching) at X: " + x1 + ", \tY: " + y1 + ", \tZ: " + z1;
+                    SetBlock(x1, y1, z1, BlockData.byID[1]);
+                    //GetChunk(0 * Chunk.chunkSize, 0 * Chunk.chunkSize, 0 * Chunk.chunkSize).update = true;
+                    //GetChunk(x1, y1, z1).update = true;
+                    
+                        yield return new WaitForEndOfFrame();
+                }
+            }
+        }
+
+        GUI_DebugBlockPlaceText.text = "Step by step placement finished.";
+
 
         StopCoroutine(CreateWorld());
         yield return null;

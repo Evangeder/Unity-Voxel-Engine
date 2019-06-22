@@ -19,7 +19,7 @@ public class Chunk : MonoBehaviour
     public WorldPos pos;
     [ReadOnly] public static int chunkSize = BlockData.ChunkSize;
     
-    public Block[] blocks = new Block[chunkSize^3];
+    public Block[] blocks = new Block[4096];
 
     [Header("Sub-Chunk prefabs")]
     public GameObject Chunk_Water;
@@ -43,7 +43,6 @@ public class Chunk : MonoBehaviour
     NativeList<Vector3> verts;
     NativeList<int> tris;
     NativeList<Vector2> uv;
-    NativeList<Vector3> March_verts;
     NativeList<int> March_tris;
     private bool IsGenerating = false;
     private bool IsRendering = false;
@@ -124,7 +123,7 @@ public class Chunk : MonoBehaviour
         {
             //Debug.Log ("Can't run OnDelete() on block " + this.GetType ().ToString () + ", at " + x + ", " + y + ", " + z);
         }
-
+        Debug.Log(blocks[x + y * 16 + z * 256].GetID + ", Conditions for update: Render_JobHandle.IsCompleted " + Render_JobHandle.IsCompleted + ", Native_blocks2.IsCreated " + Native_blocks2.IsCreated);
     }
 #pragma warning restore 168
 
@@ -145,11 +144,12 @@ public class Chunk : MonoBehaviour
     #region "Job System - Main stuff"
     void OnDestroy()
     {
+        if (!MapGen_JobHandle.IsCompleted) MapGen_JobHandle.Complete();
+        if (!Render_JobHandle.IsCompleted) Render_JobHandle.Complete();
         if (Native_blocks.IsCreated) Native_blocks.Dispose();
         if (blocktypes.IsCreated) blocktypes.Dispose();
         if (verts.IsCreated) verts.Dispose();
         if (tris.IsCreated) tris.Dispose();
-        if (March_verts.IsCreated) March_verts.Dispose();
         if (March_tris.IsCreated) March_tris.Dispose();
         if (uv.IsCreated) uv.Dispose();
     }
@@ -192,7 +192,7 @@ public class Chunk : MonoBehaviour
 
             coll.sharedMesh = mesh;
 
-            verts.Dispose(); tris.Dispose(); uv.Dispose();
+            verts.Dispose(); tris.Dispose(); uv.Dispose(); March_tris.Dispose();
         }
     }
     #endregion
@@ -201,8 +201,10 @@ public class Chunk : MonoBehaviour
 
     void UpdateChunk()
     {
-        if (Render_JobHandle.IsCompleted && !Native_blocks2.IsCreated)
+        Debug.Log("Before chunk update: " + Render_JobHandle.IsCompleted + ", " + Native_blocks2.IsCreated);
+        if (Render_JobHandle.IsCompleted && !IsRendering)
         {
+            Debug.Log("Updating chunk");
             NativeArray<Block> Chunk_MinusX = new NativeArray<Block>(4096, Allocator.TempJob);
             if (world.GetChunk((pos.x - 16), pos.y, pos.z) != null)
                 Chunk_MinusX.CopyFrom(world.GetChunk((pos.x - 16), pos.y, pos.z).blocks);
@@ -321,8 +323,7 @@ public class Chunk : MonoBehaviour
             verts = new NativeList<Vector3>(Allocator.TempJob);
             tris = new NativeList<int>(Allocator.TempJob);
             uv = new NativeList<Vector2>(Allocator.TempJob);
-
-            March_verts = new NativeList<Vector3>(Allocator.TempJob);
+            
             March_tris = new NativeList<int>(Allocator.TempJob);
 
             NativeArray<bool> GreedyBlocks_U = new NativeArray<bool>(4096, Allocator.TempJob);
@@ -411,19 +412,58 @@ public class Chunk : MonoBehaviour
                 Table_TriangleConnection = T_TriangleConnectionTable,
                 Table_VertexOffset = T_VertexOffset,
                 Marching_triangles = March_tris,
-                Marching_vertices = March_verts,
-                MarchedBlocks = new NativeArray<float>(6859, Allocator.TempJob)
+                MarchedBlocks = new NativeArray<float>(5832, Allocator.TempJob)
 
-        };
+            };
 
             Render_JobHandle = job.Schedule();
             IsRendering = true;
             
+        } else {
+            if (IsRendering || Native_blocks2.IsCreated)
+            {
+                IsRendering = false;
+                Render_JobHandle.Complete();
+
+                filter.mesh.Clear();
+                filter.mesh.subMeshCount = 2;
+
+                filter.mesh.vertices = verts.ToArray();
+                filter.mesh.SetTriangles(tris.ToArray(), 0);
+                filter.mesh.SetTriangles(March_tris.ToArray(), 1);
+                Vector2[] uvs = uv.ToArray();
+                System.Array.Resize(ref uvs, verts.Length);
+                filter.mesh.uv = uvs;
+                filter.mesh.MarkDynamic();
+                filter.mesh.RecalculateNormals();
+
+                coll.sharedMesh = null;
+
+                Mesh mesh = new Mesh();
+                mesh.vertices = verts.ToArray();
+                mesh.triangles = tris.ToArray().Concat(March_tris.ToArray()).ToArray();
+                mesh.MarkDynamic();
+                mesh.RecalculateNormals();
+
+                coll.sharedMesh = mesh;
+
+                March_tris.Dispose();
+                verts.Dispose(); tris.Dispose(); uv.Dispose();
+            } else {
+                Render_JobHandle.Complete();
+                IsRendering = false;
+                if (verts.IsCreated) verts.Dispose();
+                if (tris.IsCreated) tris.Dispose();
+                if (uv.IsCreated) uv.Dispose();
+                if (Native_blocks2.IsCreated) Native_blocks2.Dispose();
+                if (March_tris.IsCreated) March_tris.Dispose();
+                Debug.Log("Something weird happened with rendering code.");
+            }
         }
 
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     private struct Job_RenderChunk : IJob
     {
         public int chunkSize;
@@ -434,7 +474,6 @@ public class Chunk : MonoBehaviour
         public NativeList<Vector2> uvs;
 
         // MeshData for Marching Cubes terrain
-        public NativeList<Vector3> Marching_vertices;
         public NativeList<int> Marching_triangles;
 
         // Size of a tile for texturing
