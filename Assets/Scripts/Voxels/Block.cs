@@ -91,7 +91,7 @@ public static class BlockData
         };
 
         byID.Add(new Block(0));                                   //        AIR
-        byID.Add(new Block(1));                                   //        TERRAIN
+        byID.Add(new Block(1, false, new int2(0, 0)));            //        TERRAIN
         byID.Add(new Block(2));                                   //        WATER
         byID.Add(new Block(3));                                   //        Placeholder: LIQUID
         byID.Add(new Block(4));                                   //        Placeholder: LIQUID

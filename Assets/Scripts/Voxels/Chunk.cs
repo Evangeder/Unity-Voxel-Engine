@@ -20,8 +20,6 @@ public class Chunk : MonoBehaviour
     [ReadOnly] public static int chunkSize = BlockData.ChunkSize;
     
     public Block[] blocks = new Block[chunkSize^3];
-    public NativeArray<Block> Native_blocks;
-    public NativeArray<Block> Native_blocks2;
 
     [Header("Sub-Chunk prefabs")]
     public GameObject Chunk_Water;
@@ -36,12 +34,12 @@ public class Chunk : MonoBehaviour
     public bool TestMapgen = false;
 
     [Header("Job System")]
+    NativeArray<Block> Native_blocks;
+    NativeArray<Block> Native_blocks2;
     NativeArray<Block> blocktypes;
     NativeArray<float> _counter;
     private JobHandle MapGen_JobHandle = new JobHandle();
     private JobHandle Render_JobHandle = new JobHandle();
-    private bool IsGenerated = false;
-    private bool IsRendered = false;
     NativeList<Vector3> verts;
     NativeList<int> tris;
     NativeList<Vector2> uv;
@@ -229,9 +227,97 @@ public class Chunk : MonoBehaviour
             if (world.GetChunk(pos.x, pos.y, (pos.z + 16)) != null) 
                 Chunk_PlusZ.CopyFrom(world.GetChunk(pos.x, pos.y, (pos.z + 16)).blocks);
 
-            Native_blocks2 = new NativeArray<Block>(4096, Allocator.TempJob);
+            // CORNER CHUNKS (XZ)
+            
+            NativeArray<Block> Chunk_PlusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), pos.y, (pos.z + 16)) != null)
+                Chunk_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), pos.y, (pos.z + 16)).blocks);
 
+            NativeArray<Block> Chunk_PlusXMinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), pos.y, (pos.z - 16)) != null)
+                Chunk_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), pos.y, (pos.z - 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusXPlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), pos.y, (pos.z + 16)) != null)
+                Chunk_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), pos.y, (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), pos.y, (pos.z - 16)) != null)
+                Chunk_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), pos.y, (pos.z - 16)).blocks);
+
+            // CORNER CHUNKS (XY)
+
+            NativeArray<Block> Chunk_PlusXY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), (pos.y + 16), pos.z) != null)
+                Chunk_PlusXY.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), pos.z).blocks);
+
+            NativeArray<Block> Chunk_PlusXMinusY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), (pos.y - 16), pos.z) != null)
+                Chunk_PlusXMinusY.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), pos.z).blocks);
+
+            NativeArray<Block> Chunk_MinusXPlusY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), (pos.y + 16), pos.z) != null)
+                Chunk_MinusXPlusY.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), pos.z).blocks);
+
+            NativeArray<Block> Chunk_MinusXY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), (pos.y - 16), pos.z) != null)
+                Chunk_MinusXY.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), pos.z).blocks);
+
+            // CORNER CHUNKS (ZY)
+
+            NativeArray<Block> Chunk_PlusZY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk(pos.x, (pos.y + 16), (pos.z + 16)) != null)
+                Chunk_PlusZY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_PlusZMinusY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk(pos.x, (pos.y - 16), (pos.z + 16)) != null)
+                Chunk_PlusZMinusY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusZPlusY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk(pos.x, (pos.y + 16), (pos.z - 16)) != null)
+                Chunk_MinusZPlusY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), (pos.z - 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusZY = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk(pos.x, (pos.y - 16), (pos.z - 16)) != null)
+                Chunk_MinusZY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), (pos.z - 16)).blocks);
+
+            // CORNER CHUNKS (XYZ)
+
+            NativeArray<Block> Chunk_MinusY_PlusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z + 16)) != null)
+                Chunk_MinusY_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusY_MinusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z - 16)) != null)
+                Chunk_MinusY_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z - 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusY_MinusXPlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z + 16)) != null)
+                Chunk_MinusY_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_MinusY_PlusXMinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z - 16)) != null)
+                Chunk_MinusY_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z - 16)).blocks);
+
+            NativeArray<Block> Chunk_PlusY_PlusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z + 16)) != null)
+                Chunk_PlusY_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_PlusY_MinusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z - 16)) != null)
+                Chunk_PlusY_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z - 16)).blocks);
+
+            NativeArray<Block> Chunk_PlusY_MinusXPlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z + 16)) != null)
+                Chunk_PlusY_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z + 16)).blocks);
+
+            NativeArray<Block> Chunk_PlusY_PlusXMinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
+            if (world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z - 16)) != null)
+                Chunk_PlusY_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z - 16)).blocks);
+
+            Native_blocks2 = new NativeArray<Block>(4096, Allocator.TempJob);
             Native_blocks2.CopyFrom(blocks);
+
             verts = new NativeList<Vector3>(Allocator.TempJob);
             tris = new NativeList<int>(Allocator.TempJob);
             uv = new NativeList<Vector2>(Allocator.TempJob);
@@ -285,6 +371,28 @@ public class Chunk : MonoBehaviour
                 _blocks_PlusY = Chunk_PlusY,
                 _blocks_PlusZ = Chunk_PlusZ,
 
+                // CORNER CHUNKS
+                _blocks_MinusXPlusY = Chunk_MinusXPlusY,
+                _blocks_MinusXPlusZ = Chunk_MinusXPlusZ,
+                _blocks_MinusYPlusZ = Chunk_PlusZMinusY,
+                _blocks_MinusXZ = Chunk_MinusXZ,
+                _blocks_MinusXY = Chunk_MinusXY,
+                _blocks_MinusYZ = Chunk_MinusZY,
+                _blocks_PlusXMinusY = Chunk_PlusXMinusY,
+                _blocks_PlusXMinusZ = Chunk_PlusXMinusZ,
+                _blocks_PlusYMinusZ = Chunk_MinusZPlusY,
+                _blocks_PlusXY = Chunk_PlusXY,
+                _blocks_PlusYZ = Chunk_PlusZY,
+                _blocks_PlusXZ = Chunk_PlusXZ,
+                _blocks_MinusY_MinusXZ = Chunk_MinusY_MinusXZ,
+                _blocks_MinusY_PlusXZ = Chunk_MinusY_PlusXZ,
+                _blocks_MinusY_MinusX_PlusZ = Chunk_MinusY_MinusXPlusZ,
+                _blocks_MinusY_PlusX_MinusZ = Chunk_MinusY_PlusXMinusZ,
+                _blocks_PlusY_MinusXZ = Chunk_PlusY_MinusXZ,
+                _blocks_PlusY_PlusXZ = Chunk_PlusY_PlusXZ,
+                _blocks_PlusY_MinusX_PlusZ = Chunk_PlusY_MinusXPlusZ,
+                _blocks_PlusY_PlusX_MinusZ = Chunk_PlusY_PlusXMinusZ,
+
                 // USE GREEDY MESHING ON STANDART VOXELS (EXPERIMENTAL)
                 UseGreedyMeshing = true,
                 // GREEDY MESHING FACE FLAGS
@@ -304,7 +412,7 @@ public class Chunk : MonoBehaviour
                 Table_VertexOffset = T_VertexOffset,
                 Marching_triangles = March_tris,
                 Marching_vertices = March_verts,
-                MarchedBlocks = new NativeArray<float>(4913, Allocator.TempJob)
+                MarchedBlocks = new NativeArray<float>(6859, Allocator.TempJob)
 
         };
 
@@ -315,7 +423,7 @@ public class Chunk : MonoBehaviour
 
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     private struct Job_RenderChunk : IJob
     {
         public int chunkSize;
@@ -343,8 +451,56 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusY;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusZ;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusZ;
+
+        // Corner chunks (XZ)
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusXZ;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusXZ;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusXPlusZ;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusXMinusZ;
+
+        // Corner chunks (XY)
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusXY;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusXY;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusXPlusY;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusXMinusY;
+
+        // Corner chunks (YZ)
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusYZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusYZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusYPlusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusYMinusZ;
+
+        // Corner chunks (XYZ)
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusY_PlusXZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusY_MinusXZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusY_MinusX_PlusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusY_PlusX_MinusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusY_PlusXZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusY_MinusXZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusY_MinusX_PlusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusY_PlusX_MinusZ;
         
-        // Greedy flag for every direction of block
+        // +X-Z                +X                 +X+Z  Corner blocks are needed only for marching cubes.
+        //      ┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐       For regular voxels they are redundant, as you only have to check +X, -X, +Y, -Y, +Z, and -Z faces.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       With marching cubes, you actually have to check for every neighbour block.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Otherwise you'll end up with holes in your chunk.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤ 
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Every surrounding chunk is converted into NativeArray<Block> and then fed into resized chunk.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Resized chunk is [ChunkSize + 1] and called MCS (Marching Cubes Scaled)
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Then the surrounding chunk's neighbour blocks to our worker chunk are getting copied into MCS.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       
+        //   -Z ├─┼─┼─┼─┼─┼─┼ 16 ^3 ┼─┼─┼─┼─┼─┼─┤ +Z    Then each block is analyzed for marching cubes algorithm.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Iterating goes from (0) to (ChunkSize) for X and Z, and from (-1) to (ChunkSize - 1)
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Why not everything from (-1) to (ChunkSize)? Because marching cubes meshes would overlap.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Not that it's a problem (because it wouldn't be) other than more tris on scene.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Just because of that, we are skipping the iterations.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Also Y goes from (-1) to (ChunkSize - 1) because the ceiling is broken. I have to fix that.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       
+        //      └─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘       Anyways, algorithm is now working properly, but it STILL generates weird artifacts, i might now know what causes it
+        // -X-Z                -X                 -X+Z  but i can't seem to find the issue in the code, it's probably something deeper than i think it is.
+
+        // Greedy mesh flag for every direction of block
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_U;
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_D;
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_N;
@@ -353,8 +509,9 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_W;
 
         // RENDERING OPTIONS
-        [ReadOnly] public bool UseGreedyMeshing; //TODO: Fix texturing (it's all stretched now)
-        [ReadOnly] public bool UseMarchingCubes;
+        [ReadOnly] public bool UseGreedyMeshing; //TODO: Fix texturing (it's all stretched now) - Idea: Divide the mesh into submeshes and apply tri-planar shader for texturing.
+        [ReadOnly] public bool UseMarchingCubes; //TODO: Fix the +X -X corners, it's making weird artifacts now. Also allow to divide mesh into submeshes, so you can have independent blocks
+                                                 //      marched together
 
         // MARCHING CUBES, Define this ONLY if you want to perform marching, otherwise, don't.
         [DeallocateOnJobCompletion] public NativeArray<float> MarchedBlocks;
@@ -364,45 +521,46 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_CubeEdgeFlags;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_TriangleConnection;
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_VertexOffset;
+
+        public static int GetAddress(int x, int y, int z, int size = 16)
+        {
+            return (x + y * size + z * size * size);
+        }
+
         public void Execute()
         {
-            if (UseMarchingCubes) {
-                
-                //MarchedBlocks_Water = new NativeArray<float>(_blocks.Length, Allocator.TempJob);
-            }
-
             Block tbmx, tbpx, tbmy, tbpy, tbmz, tbpz, tb;
-            //Block g_tbmx, g_tbpx, g_tbmy, g_tbpy, g_tbmz, g_tbpz;
-            int x, y, z;
-            for (x = 0; x < 16; x++)
+            int MCS = chunkSize + 1;
+
+            for (int x = 0; x < chunkSize; x++)
             {
-                for (y = 0; y < 16; y++)
+                for (int y = 0; y < chunkSize; y++)
                 {
-                    for (z = 0; z < 16; z++)
+                    for (int z = 0; z < chunkSize; z++)
                     {
-                        if (_blocks[x + y * 16 + z * 256].GetID != 0) {
+                        if (_blocks[GetAddress(x,y,z)].GetID != 0) {
                             if (_blocks[x + y * 16 + z * 256].GetID == 1) {
                                 // TERRAIN ( Marching Cubes )
                                 if (UseMarchingCubes)
                                 {
                                     // TODO: Think of changing the 1f value to random OR average of neighbour 3-4 blocks
-                                    MarchedBlocks[x + y * 16 + z * 256] = 1f;
+                                    MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = 1f;
                                 }
-                            } else if (_blocks[x + y * 16 + z * 256].GetID == 2) {
+                            } else if (_blocks[GetAddress(x, y, z)].GetID == 2) {
                                 // WATER
                                 if (UseMarchingCubes)
                                 {
                                     //MarchedBlocks_Water[x + y * 16 + z * 256] = 1f;
                                 }
-                            } else if (_blocks[x + y * 16 + z * 256].GetID > 10) {
-                                if (x == 0) tbmx = _blocks_MinusX[15 + y * 16 + z * 256]; else tbmx = _blocks[x-1 + y * 16 + z * 256];
-                                if (x == 15) tbpx = _blocks_PlusX[y * 16 + z * 256]; else tbpx = _blocks[x+1 + y * 16 + z * 256];
-                                if (y == 0) tbmy = _blocks_MinusY[x + (15 * 16) + z * 256]; else tbmy = _blocks[x + (y - 1) * 16 + z * 256];
-                                if (y == 15) tbpy = _blocks_PlusY[x + z * 256]; else tbpy = _blocks[x + (y + 1) * 16 + z * 256];
-                                if (z == 0) tbmz = _blocks_MinusZ[x + y * 16 + (15 * 256)]; else tbmz = _blocks[x + y * 16 + (z - 1) * 256];
-                                if (z == 15) tbpz = _blocks_PlusZ[x + y * 16]; else tbpz = _blocks[x + y * 16 + (z + 1) * 256];
+                            } else if (_blocks[GetAddress(x, y, z)].GetID > 10) {
+                                if (x == 0) tbmx = _blocks_MinusX[GetAddress(chunkSize - 1, y, z)]; else tbmx = _blocks[GetAddress(x - 1, y, z)];
+                                if (x == chunkSize - 1) tbpx = _blocks_PlusX[GetAddress(0, y, z)]; else tbpx = _blocks[GetAddress(x + 1, y, z)];
+                                if (y == 0) tbmy = _blocks_MinusY[GetAddress(x, chunkSize - 1, z)]; else tbmy = _blocks[GetAddress(x, y - 1, z)];
+                                if (y == chunkSize - 1) tbpy = _blocks_PlusY[GetAddress(x, 0, z)]; else tbpy = _blocks[GetAddress(x, y + 1, z)];
+                                if (z == 0) tbmz = _blocks_MinusZ[GetAddress(x, y, chunkSize - 1)]; else tbmz = _blocks[GetAddress(x, y, z - 1)];
+                                if (z == chunkSize - 1) tbpz = _blocks_PlusZ[GetAddress(x, y, 0)]; else tbpz = _blocks[GetAddress(x, y, z + 1)];
 
-                                tb = _blocks[x + y * 16 + z * 256];
+                                tb = _blocks[GetAddress(x, y, z)];
 
 
                                 if (UseGreedyMeshing)
@@ -479,6 +637,7 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
                                         // And lastly, set the textures onto those triangles.
+                                        
                                         uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + 0.001f));
                                         uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
                                         uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
@@ -896,6 +1055,48 @@ public class Chunk : MonoBehaviour
             // MARCHING CUBES HERE
             if (UseMarchingCubes)
             {
+                int ix, iy, iz, vert, idx;
+                
+                // FILL THE CORNER BLOCKS
+                for (int i = 0; i < chunkSize; i++) {
+                    for (int i2 = 0; i2 < chunkSize; i2++) {
+                        if      (_blocks_MinusX[GetAddress(chunkSize - 1,             i,            i2)].GetID == 1) MarchedBlocks[GetAddress(0,      i + 1, i2 + 1, MCS)] = 1f;
+                        if       (_blocks_PlusX[GetAddress(            0,             i,            i2)].GetID == 1) MarchedBlocks[GetAddress(MCS,    i + 1, i2 + 1, MCS)] = 1f;
+                        if      (_blocks_MinusY[GetAddress(            i, chunkSize - 1,            i2)].GetID == 1) MarchedBlocks[GetAddress(i + 1,      0, i2 + 1, MCS)] = 1f;
+                        if       (_blocks_PlusY[GetAddress(            i,             0,            i2)].GetID == 1) MarchedBlocks[GetAddress(i + 1,    MCS, i2 + 1, MCS)] = 1f;
+                        if      (_blocks_MinusZ[GetAddress(            i,            i2, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(i + 1, i2 + 1,      0, MCS)] = 1f;
+                        if       (_blocks_PlusZ[GetAddress(            i,            i2,             0)].GetID == 1) MarchedBlocks[GetAddress(i + 1, i2 + 1,    MCS, MCS)] = 1f;
+                    }
+                }
+                for (int i = 0; i < chunkSize; i++) {
+                    // XZ
+                    if         (_blocks_MinusXZ[GetAddress(chunkSize - 1,             i, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(0,      i + 1,      0, MCS)] = 1f;
+                    if          (_blocks_PlusXZ[GetAddress(            0,             i,             0)].GetID == 1) MarchedBlocks[GetAddress(MCS,    i + 1,    MCS, MCS)] = 1f;
+                    if     (_blocks_MinusXPlusZ[GetAddress(chunkSize - 1,             i,             0)].GetID == 1) MarchedBlocks[GetAddress(0,      i + 1,    MCS, MCS)] = 1f;
+                    if     (_blocks_PlusXMinusZ[GetAddress(            0,             i, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(MCS,    i + 1,      0, MCS)] = 1f;
+                    // XY
+                    if         (_blocks_MinusXY[GetAddress(chunkSize - 1, chunkSize - 1,             i)].GetID == 1) MarchedBlocks[GetAddress(0,          0,  i + 1, MCS)] = 1f;
+                    if          (_blocks_PlusXY[GetAddress(            0,             0,             i)].GetID == 1) MarchedBlocks[GetAddress(MCS,      MCS,  i + 1, MCS)] = 1f;
+                    if     (_blocks_MinusXPlusY[GetAddress(chunkSize - 1,             0,             i)].GetID == 1) MarchedBlocks[GetAddress(0,        MCS,  i + 1, MCS)] = 1f;
+                    if     (_blocks_PlusXMinusY[GetAddress(            0, chunkSize - 1,             i)].GetID == 1) MarchedBlocks[GetAddress(MCS,        0,  i + 1, MCS)] = 1f;
+                    // YZ
+                    if         (_blocks_MinusYZ[GetAddress(            i, chunkSize - 1, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(i + 1,      0,      0, MCS)] = 1f;
+                    if          (_blocks_PlusYZ[GetAddress(            i,             0,             0)].GetID == 1) MarchedBlocks[GetAddress(i + 1,    MCS,    MCS, MCS)] = 1f;
+                    if     (_blocks_MinusYPlusZ[GetAddress(            i, chunkSize - 1,             0)].GetID == 1) MarchedBlocks[GetAddress(i + 1,      0,    MCS, MCS)] = 1f;
+                    if     (_blocks_PlusYMinusZ[GetAddress(            i,             0, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(i + 1,    MCS,      0, MCS)] = 1f;
+                }
+                // Corners (XYZ)
+                if        (_blocks_PlusY_PlusXZ[GetAddress(            0,             0,             0)].GetID == 1) MarchedBlocks[GetAddress(MCS,      MCS,    MCS, MCS)] = 1f;
+                if       (_blocks_MinusY_PlusXZ[GetAddress(            0, chunkSize - 1,             0)].GetID == 1) MarchedBlocks[GetAddress(MCS,        0,    MCS, MCS)] = 1f;
+                if      (_blocks_MinusY_MinusXZ[GetAddress(chunkSize - 1, chunkSize - 1, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(0,          0,      0, MCS)] = 1f;
+                if       (_blocks_PlusY_MinusXZ[GetAddress(chunkSize - 1,             0, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(0,        MCS,      0, MCS)] = 1f;
+                if  (_blocks_PlusY_MinusX_PlusZ[GetAddress(chunkSize - 1,             0,             0)].GetID == 1) MarchedBlocks[GetAddress(0,        MCS,    MCS, MCS)] = 1f;
+                if (_blocks_MinusY_MinusX_PlusZ[GetAddress(chunkSize - 1, chunkSize - 1,             0)].GetID == 1) MarchedBlocks[GetAddress(0,          0,    MCS, MCS)] = 1f;
+                if  (_blocks_PlusY_PlusX_MinusZ[GetAddress(            0,             0, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(MCS,      MCS,      0, MCS)] = 1f;
+                if (_blocks_MinusY_PlusX_MinusZ[GetAddress(            0, chunkSize - 1, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(MCS,        0,      0, MCS)] = 1f;
+                // END OF FILLING CORNER BLOCKS
+
+
                 float Surface = 0.5f;
                 NativeArray<float> Cube = new NativeArray<float>(8, Allocator.Temp);
                 NativeArray<int> WindingOrder = new NativeArray<int>(3, Allocator.Temp);
@@ -916,22 +1117,23 @@ public class Chunk : MonoBehaviour
                     WindingOrder[2] = 0;
                 }
 
-                int i, ix, iy, iz, i2, j, vert, idx;
-
-                for (x = 0; x < chunkSize - 1; x++)
+                //TODO: Fix the weird slope on +X and -X corner (+X+Y, -X+Y)
+                for (int x = 0; x < chunkSize; x++)
                 {
-                    for (y = 0; y < chunkSize - 1; y++)
+                    for (int y = -1; y < chunkSize - 1; y++)
                     {
-                        for (z = 0; z < chunkSize - 1; z++)
+                        for (int z = 0; z < chunkSize; z++)
                         {
+                            
+                                
                             //Get the values in the 8 neighbours which make up a cube
-                            for (i = 0; i < 8; i++)
+                            for (int i = 0; i < 8; i++)
                             {
-                                ix = x + Table_VertexOffset[i*3 + 0];
-                                iy = y + Table_VertexOffset[i*3 + 1];
-                                iz = z + Table_VertexOffset[i*3 + 2];
+                                ix = x+1 + Table_VertexOffset[i*3 + 0];
+                                iy = y+1 + Table_VertexOffset[i*3 + 1];
+                                iz = z+1 + Table_VertexOffset[i*3 + 2];
 
-                                Cube[i] = MarchedBlocks[ix + iy * chunkSize + iz * chunkSize * chunkSize];
+                                Cube[i] = MarchedBlocks[ix + iy * MCS + iz * MCS * MCS];
                             }
 
                             //Perform algorithm
@@ -942,7 +1144,7 @@ public class Chunk : MonoBehaviour
                             float offset = 0.0f;
 
                             //Find which vertices are inside of the surface and which are outside
-                            for (i2 = 0; i2 < 8; i2++) if (Cube[i2] <= Surface) flagIndex |= 1 << i2;
+                            for (int i2 = 0; i2 < 8; i2++) if (Cube[i2] <= Surface) flagIndex |= 1 << i2;
 
                             //Find which edges are intersected by the surface
                             int edgeFlags = Table_CubeEdgeFlags[flagIndex];
@@ -952,7 +1154,7 @@ public class Chunk : MonoBehaviour
                             {
 
                                 //Find the point of intersection of the surface with each edge
-                                for (i2 = 0; i2 < 12; i2++)
+                                for (int i2 = 0; i2 < 12; i2++)
                                 {
                                     //if there is an intersection on this edge
                                     if ((edgeFlags & (1 << i2)) != 0)
@@ -968,13 +1170,13 @@ public class Chunk : MonoBehaviour
                                 }
 
                                 //Save the triangles that were found. There can be up to five per cube
-                                for (i2 = 0; i2 < 5; i2++)
+                                for (int i2 = 0; i2 < 5; i2++)
                                 {
                                     if (Table_TriangleConnection[flagIndex * 16 + (3 * i2)] < 0) break;
 
                                     idx = vertices.Length;
 
-                                    for (j = 0; j < 3; j++)
+                                    for (int j = 0; j < 3; j++)
                                     {
                                         vert = Table_TriangleConnection[flagIndex * 16 + (3 * i2 + j)];
                                         Marching_triangles.Add(idx + WindingOrder[j]);
@@ -1194,13 +1396,13 @@ public class Chunk : MonoBehaviour
                     {
                         //set blocks
                         int test = random.NextInt(-2, 2);
-                        if (ChunkCoordinates.y + y == 25 + test)
+                        if (ChunkCoordinates.y + y == 25)
                         {
                             _blocksNew[x + y * 16 + z * 256] = blocktype[1];
                         }
-                        else if (ChunkCoordinates.y + y < 25 + test)
+                        else if (ChunkCoordinates.y + y < 25)
                         {
-                            _blocksNew[x + y * 16 + z * 256] = blocktype[13];
+                            _blocksNew[x + y * 16 + z * 256] = blocktype[1];
                         }
                     }
                 }

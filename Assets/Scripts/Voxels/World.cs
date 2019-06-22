@@ -13,8 +13,8 @@ public class World : MonoBehaviour
     public Dictionary<WorldPos, Chunk> chunks = new Dictionary<WorldPos, Chunk>();
 
     public GameObject Prefab_Chunk_NonSmoothed;
-    public GameObject Prefab_Chunk_Smoothed;
-    public GameObject Prefab_Chunk_Water;
+    //public GameObject Prefab_Chunk_Smoothed;
+    //public GameObject Prefab_Chunk_Water;
     
     // [Chunk blocks]
     // Calculation for coordinates:
@@ -43,7 +43,7 @@ public class World : MonoBehaviour
     // This is to be optimized via greedy meshing
     // 
     // X, Y, Z
-    int3 WorldSize = new int3(8, 4, 8);
+    int3 WorldSize = new int3(2, 4, 2);
 
     // For loading purposes of old IJob code, each IJob increases value of this ushort by 1
     // When this gets around 70% of WorldSize X^Y^Z, proceed to rendering
@@ -113,7 +113,7 @@ public class World : MonoBehaviour
             }
         }
 
-        while (GeneratedChunks < (WorldSize.x * WorldSize.y * WorldSize.z)/2)
+        while (GeneratedChunks < (WorldSize.x * WorldSize.y * WorldSize.z))
         {
             yield return null;
         }
