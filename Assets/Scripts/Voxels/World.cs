@@ -43,7 +43,7 @@ public class World : MonoBehaviour
     // This is to be optimized via greedy meshing
     // 
     // X, Y, Z
-    int3 WorldSize = new int3(2, 4, 2);
+    int3 WorldSize = new int3(5, 4, 5);
 
     // For loading purposes of old IJob code, each IJob increases value of this ushort by 1
     // When this gets around 70% of WorldSize X^Y^Z, proceed to rendering
@@ -99,8 +99,7 @@ public class World : MonoBehaviour
             {
                 for (int y = 0; y <= WorldSize.y; y++)
                 {
-                    CreateChunk(x * Chunk.chunkSize, y * Chunk.chunkSize, z * Chunk.chunkSize, false);
-                    GeneratedChunks += 1;
+                    CreateChunk(x * Chunk.chunkSize, y * Chunk.chunkSize, z * Chunk.chunkSize, true);
                     //if (WorldSize.x > 8 || WorldSize.y > 8 || WorldSize.z > 8)
                     //{
                     delay++;
@@ -140,24 +139,6 @@ public class World : MonoBehaviour
                     }
                     //}
                     //yield return new WaitForEndOfFrame();
-                }
-            }
-        }
-
-        delay = 0;
-
-        for (int y1 = 0; y1 < 26; y1++)
-        {
-            for (int x1 = 0; x1 < 32; x1++)
-            {
-                for (int z1 = 0; z1 < 32; z1++)
-                {
-                    GUI_DebugBlockPlaceText.text = "Placing Block 1 (Marching) at X: " + x1 + ", \tY: " + y1 + ", \tZ: " + z1;
-                    SetBlock(x1, y1, z1, BlockData.byID[1]);
-                    //GetChunk(0 * Chunk.chunkSize, 0 * Chunk.chunkSize, 0 * Chunk.chunkSize).update = true;
-                    //GetChunk(x1, y1, z1).update = true;
-                    
-                        yield return new WaitForEndOfFrame();
                 }
             }
         }

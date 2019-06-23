@@ -72,8 +72,8 @@ public struct Block
 public static class BlockData
 {
     public static int ChunkSize = 16;
-    public static Dictionary<int, Block> sortedByID;
     public static List<Block> byID = new List<Block>();
+    public static List<int2> textures = new List<int2>();
     public static float BlockTileSize = 0.25f;
 
 
@@ -112,6 +112,11 @@ public static class BlockData
         byID.Add(new Block(16, true, textures));                  //        WOOD (LOG)
         byID.Add(new Block(16, true, new int2(0, 1)));            //        LEAVES
         byID.Add(new Block(18, true, new int2(0, 0)));            //        GLASS /       LACK OF TEXTURE, TODO
+
+        textures.Add(new int2(0, 0)); // STONE
+        textures.Add(new int2(1, 0)); // GROUND
+        textures.Add(new int2(2, 0)); // GRASS
+        textures.Add(new int2(3, 0)); // GRASS_SIDE
     }
 }
 

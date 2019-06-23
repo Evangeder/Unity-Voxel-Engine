@@ -42,6 +42,8 @@ public class Chunk : MonoBehaviour
     private JobHandle Render_JobHandle = new JobHandle();
     NativeList<Vector3> verts;
     NativeList<int> tris;
+    NativeList<int> subTriangles_positions;
+    NativeList<int> subTriangles_values;
     NativeList<Vector2> uv;
     NativeList<int> March_tris;
     private bool IsGenerating = false;
@@ -143,6 +145,8 @@ public class Chunk : MonoBehaviour
     #region "Job System - Main stuff"
     void OnDestroy()
     {
+        // When closing the game or switching to menu/new map, regain ownership of jobs if they are present and dispose every NativeArray/NativeList.
+        // This is to prevent memory leaking.
         if (!MapGen_JobHandle.IsCompleted) MapGen_JobHandle.Complete();
         if (!Render_JobHandle.IsCompleted) Render_JobHandle.Complete();
         if (Native_blocks.IsCreated) Native_blocks.Dispose();
@@ -155,6 +159,11 @@ public class Chunk : MonoBehaviour
 
     void LateUpdate()
     {
+        // Get the jobs and check if they have finished
+        // If they indeed finished their work, call .Complete() to regain ownership in main thread.
+        // Then, copy the data and dispose Natives.
+
+        // MapGen job, this is actually so lightweight that i doesn't require multi-frame tasking.
         if (IsGenerating)
         {
             IsGenerating = false;
@@ -164,15 +173,20 @@ public class Chunk : MonoBehaviour
             Native_blocks.Dispose();
             world.GeneratedChunks += 1;
         }
+
+        // Rendering job, check if the handle.IsCompleted and Complete the IJob
         if (IsRendering && Render_JobHandle.IsCompleted)
         {
             IsRendering = false;
             Render_JobHandle.Complete();
 
             filter.mesh.Clear();
+            // subMeshCount is actually how many materials you can use inside that particular mesh
             filter.mesh.subMeshCount = 2;
 
+            // Vertices are shared between all subMeshes
             filter.mesh.vertices = verts.ToArray();
+            // You have to set triangles for every subMesh you created, you can skip those if you want ofc.
             filter.mesh.SetTriangles(tris.ToArray(), 0);
             filter.mesh.SetTriangles(March_tris.ToArray(), 1);
             Vector2[] uvs = uv.ToArray();
@@ -202,127 +216,97 @@ public class Chunk : MonoBehaviour
     {
         if (Render_JobHandle.IsCompleted && !IsRendering)
         {
+            // Grab data from surrounding chunks
+            // SIDE CHUNKS (X or Y or Z)
+
             NativeArray<Block> Chunk_MinusX = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), pos.y, pos.z) != null)
-                Chunk_MinusX.CopyFrom(world.GetChunk((pos.x - 16), pos.y, pos.z).blocks);
-            
+            if (world.GetChunk((pos.x - 16), pos.y, pos.z) != null) Chunk_MinusX.CopyFrom(world.GetChunk((pos.x - 16), pos.y, pos.z).blocks);
             NativeArray<Block> Chunk_PlusX = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), pos.y, pos.z) != null)
-                Chunk_PlusX.CopyFrom(world.GetChunk((pos.x + 16), pos.y, pos.z).blocks);
-
+            if (world.GetChunk((pos.x + 16), pos.y, pos.z) != null) Chunk_PlusX.CopyFrom(world.GetChunk((pos.x + 16), pos.y, pos.z).blocks);
             NativeArray<Block> Chunk_MinusY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, (pos.y - 16), pos.z) != null)
-                Chunk_MinusY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), pos.z).blocks);
-
+            if (world.GetChunk(pos.x, (pos.y - 16), pos.z) != null) Chunk_MinusY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), pos.z).blocks);
             NativeArray<Block> Chunk_PlusY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, (pos.y + 16), pos.z) != null)
-                Chunk_PlusY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), pos.z).blocks);
-
+            if (world.GetChunk(pos.x, (pos.y + 16), pos.z) != null) Chunk_PlusY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), pos.z).blocks);
             NativeArray<Block> Chunk_MinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, pos.y, (pos.z - 16)) != null)
-                Chunk_MinusZ.CopyFrom(world.GetChunk(pos.x, pos.y, (pos.z - 16)).blocks);
-
+            if (world.GetChunk(pos.x, pos.y, (pos.z - 16)) != null) Chunk_MinusZ.CopyFrom(world.GetChunk(pos.x, pos.y, (pos.z - 16)).blocks);
             NativeArray<Block> Chunk_PlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, pos.y, (pos.z + 16)) != null) 
-                Chunk_PlusZ.CopyFrom(world.GetChunk(pos.x, pos.y, (pos.z + 16)).blocks);
+            if (world.GetChunk(pos.x, pos.y, (pos.z + 16)) != null)  Chunk_PlusZ.CopyFrom(world.GetChunk(pos.x, pos.y, (pos.z + 16)).blocks);
 
             // CORNER CHUNKS (XZ)
             
             NativeArray<Block> Chunk_PlusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), pos.y, (pos.z + 16)) != null)
-                Chunk_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), pos.y, (pos.z + 16)).blocks);
-
+            if (world.GetChunk((pos.x + 16), pos.y, (pos.z + 16)) != null) Chunk_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), pos.y, (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_PlusXMinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), pos.y, (pos.z - 16)) != null)
-                Chunk_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), pos.y, (pos.z - 16)).blocks);
-
+            if (world.GetChunk((pos.x + 16), pos.y, (pos.z - 16)) != null) Chunk_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), pos.y, (pos.z - 16)).blocks);
             NativeArray<Block> Chunk_MinusXPlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), pos.y, (pos.z + 16)) != null)
-                Chunk_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), pos.y, (pos.z + 16)).blocks);
-
+            if (world.GetChunk((pos.x - 16), pos.y, (pos.z + 16)) != null) Chunk_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), pos.y, (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_MinusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), pos.y, (pos.z - 16)) != null)
-                Chunk_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), pos.y, (pos.z - 16)).blocks);
+            if (world.GetChunk((pos.x - 16), pos.y, (pos.z - 16)) != null) Chunk_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), pos.y, (pos.z - 16)).blocks);
 
             // CORNER CHUNKS (XY)
 
             NativeArray<Block> Chunk_PlusXY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), (pos.y + 16), pos.z) != null)
-                Chunk_PlusXY.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), pos.z).blocks);
-
+            if (world.GetChunk((pos.x + 16), (pos.y + 16), pos.z) != null) Chunk_PlusXY.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), pos.z).blocks);
             NativeArray<Block> Chunk_PlusXMinusY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), (pos.y - 16), pos.z) != null)
-                Chunk_PlusXMinusY.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), pos.z).blocks);
-
+            if (world.GetChunk((pos.x + 16), (pos.y - 16), pos.z) != null) Chunk_PlusXMinusY.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), pos.z).blocks);
             NativeArray<Block> Chunk_MinusXPlusY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), (pos.y + 16), pos.z) != null)
-                Chunk_MinusXPlusY.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), pos.z).blocks);
-
+            if (world.GetChunk((pos.x - 16), (pos.y + 16), pos.z) != null) Chunk_MinusXPlusY.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), pos.z).blocks);
             NativeArray<Block> Chunk_MinusXY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), (pos.y - 16), pos.z) != null)
-                Chunk_MinusXY.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), pos.z).blocks);
+            if (world.GetChunk((pos.x - 16), (pos.y - 16), pos.z) != null) Chunk_MinusXY.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), pos.z).blocks);
 
             // CORNER CHUNKS (ZY)
 
             NativeArray<Block> Chunk_PlusZY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, (pos.y + 16), (pos.z + 16)) != null)
-                Chunk_PlusZY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), (pos.z + 16)).blocks);
-
+            if (world.GetChunk(pos.x, (pos.y + 16), (pos.z + 16)) != null) Chunk_PlusZY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_PlusZMinusY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, (pos.y - 16), (pos.z + 16)) != null)
-                Chunk_PlusZMinusY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), (pos.z + 16)).blocks);
-
+            if (world.GetChunk(pos.x, (pos.y - 16), (pos.z + 16)) != null) Chunk_PlusZMinusY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_MinusZPlusY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, (pos.y + 16), (pos.z - 16)) != null)
-                Chunk_MinusZPlusY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), (pos.z - 16)).blocks);
-
+            if (world.GetChunk(pos.x, (pos.y + 16), (pos.z - 16)) != null) Chunk_MinusZPlusY.CopyFrom(world.GetChunk(pos.x, (pos.y + 16), (pos.z - 16)).blocks);
             NativeArray<Block> Chunk_MinusZY = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk(pos.x, (pos.y - 16), (pos.z - 16)) != null)
-                Chunk_MinusZY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), (pos.z - 16)).blocks);
+            if (world.GetChunk(pos.x, (pos.y - 16), (pos.z - 16)) != null) Chunk_MinusZY.CopyFrom(world.GetChunk(pos.x, (pos.y - 16), (pos.z - 16)).blocks);
 
             // CORNER CHUNKS (XYZ)
 
             NativeArray<Block> Chunk_MinusY_PlusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z + 16)) != null)
-                Chunk_MinusY_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z + 16)).blocks);
-
+            if (world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z + 16)) != null) Chunk_MinusY_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_MinusY_MinusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z - 16)) != null)
-                Chunk_MinusY_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z - 16)).blocks);
-
+            if (world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z - 16)) != null) Chunk_MinusY_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z - 16)).blocks);
             NativeArray<Block> Chunk_MinusY_MinusXPlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z + 16)) != null)
-                Chunk_MinusY_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z + 16)).blocks);
-
+            if (world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z + 16)) != null) Chunk_MinusY_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y - 16), (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_MinusY_PlusXMinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z - 16)) != null)
-                Chunk_MinusY_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z - 16)).blocks);
-
+            if (world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z - 16)) != null) Chunk_MinusY_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y - 16), (pos.z - 16)).blocks);
             NativeArray<Block> Chunk_PlusY_PlusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z + 16)) != null)
-                Chunk_PlusY_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z + 16)).blocks);
-
+            if (world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z + 16)) != null) Chunk_PlusY_PlusXZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_PlusY_MinusXZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z - 16)) != null)
-                Chunk_PlusY_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z - 16)).blocks);
-
+            if (world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z - 16)) != null) Chunk_PlusY_MinusXZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z - 16)).blocks);
             NativeArray<Block> Chunk_PlusY_MinusXPlusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z + 16)) != null)
-                Chunk_PlusY_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z + 16)).blocks);
-
+            if (world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z + 16)) != null) Chunk_PlusY_MinusXPlusZ.CopyFrom(world.GetChunk((pos.x - 16), (pos.y + 16), (pos.z + 16)).blocks);
             NativeArray<Block> Chunk_PlusY_PlusXMinusZ = new NativeArray<Block>(4096, Allocator.TempJob);
-            if (world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z - 16)) != null)
-                Chunk_PlusY_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z - 16)).blocks);
+            if (world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z - 16)) != null) Chunk_PlusY_PlusXMinusZ.CopyFrom(world.GetChunk((pos.x + 16), (pos.y + 16), (pos.z - 16)).blocks);
+
+            // Now, convert blocks managed array into unmanaged for our worker chunk
+            // WORKER CHUNK (CURRENT)
 
             Native_blocks2 = new NativeArray<Block>(4096, Allocator.TempJob);
             Native_blocks2.CopyFrom(blocks);
 
+            // Mesh info for non-marching voxels
+
             verts = new NativeList<Vector3>(Allocator.TempJob);
             tris = new NativeList<int>(Allocator.TempJob);
             uv = new NativeList<Vector2>(Allocator.TempJob);
+
+            subTriangles_positions = new NativeList<int>(Allocator.TempJob);
+            subTriangles_values = new NativeList<int>(Allocator.TempJob);
+
+            NativeHashMap<int, NativeList<int>> test = new NativeHashMap<int, NativeList<int>>(BlockData.byID.Count, Allocator.TempJob);
             
+
+            // Marching cubes mesh info
+
             March_tris = new NativeList<int>(Allocator.TempJob);
 
+            // Greedy mesh flags
             NativeArray<bool> GreedyBlocks_U = new NativeArray<bool>(4096, Allocator.TempJob);
             NativeArray<bool> GreedyBlocks_D = new NativeArray<bool>(4096, Allocator.TempJob);
             NativeArray<bool> GreedyBlocks_N = new NativeArray<bool>(4096, Allocator.TempJob);
@@ -330,18 +314,15 @@ public class Chunk : MonoBehaviour
             NativeArray<bool> GreedyBlocks_E = new NativeArray<bool>(4096, Allocator.TempJob);
             NativeArray<bool> GreedyBlocks_W = new NativeArray<bool>(4096, Allocator.TempJob);
 
+            // Marching cubes tables
             NativeArray<int> T_CubeEdgeFlags = new NativeArray<int>(MarchingCubesTables.CubeEdgeFlags.Length, Allocator.TempJob);
             T_CubeEdgeFlags.CopyFrom(MarchingCubesTables.CubeEdgeFlags);
-
             NativeArray<int> T_EdgeConnection = new NativeArray<int>(MarchingCubesTables.EdgeConnection.Length, Allocator.TempJob);
             T_EdgeConnection.CopyFrom(MarchingCubesTables.EdgeConnection);
-
             NativeArray<float> T_EdgeDirection = new NativeArray<float>(MarchingCubesTables.EdgeDirection.Length, Allocator.TempJob);
             T_EdgeDirection.CopyFrom(MarchingCubesTables.EdgeDirection);
-
             NativeArray<int> T_TriangleConnectionTable = new NativeArray<int>(MarchingCubesTables.TriangleConnectionTable.Length, Allocator.TempJob);
             T_TriangleConnectionTable.CopyFrom(MarchingCubesTables.TriangleConnectionTable);
-
             NativeArray<int> T_VertexOffset = new NativeArray<int>(MarchingCubesTables.VertexOffset.Length, Allocator.TempJob);
             T_VertexOffset.CopyFrom(MarchingCubesTables.VertexOffset);
             
@@ -350,6 +331,7 @@ public class Chunk : MonoBehaviour
                 // TILING SIZE FOR TEXTURING
                 tileSize = BlockData.BlockTileSize,
 
+                // SIZE OF THE CHUNKS THAT WE ARE WORKING WITH
                 chunkSize = chunkSize,
 
                 // BLOCKDATA
@@ -417,45 +399,15 @@ public class Chunk : MonoBehaviour
             IsRendering = true;
             
         } else {
-            if (IsRendering || Native_blocks2.IsCreated)
-            {
-                IsRendering = false;
-                Render_JobHandle.Complete();
-
-                filter.mesh.Clear();
-                filter.mesh.subMeshCount = 2;
-
-                filter.mesh.vertices = verts.ToArray();
-                filter.mesh.SetTriangles(tris.ToArray(), 0);
-                filter.mesh.SetTriangles(March_tris.ToArray(), 1);
-                Vector2[] uvs = uv.ToArray();
-                System.Array.Resize(ref uvs, verts.Length);
-                filter.mesh.uv = uvs;
-                filter.mesh.MarkDynamic();
-                filter.mesh.RecalculateNormals();
-
-                coll.sharedMesh = null;
-
-                Mesh mesh = new Mesh();
-                mesh.vertices = verts.ToArray();
-                mesh.triangles = tris.ToArray().Concat(March_tris.ToArray()).ToArray();
-                mesh.MarkDynamic();
-                mesh.RecalculateNormals();
-
-                coll.sharedMesh = mesh;
-
-                March_tris.Dispose();
-                verts.Dispose(); tris.Dispose(); uv.Dispose();
-            } else {
-                Render_JobHandle.Complete();
-                IsRendering = false;
-                if (verts.IsCreated) verts.Dispose();
-                if (tris.IsCreated) tris.Dispose();
-                if (uv.IsCreated) uv.Dispose();
-                if (Native_blocks2.IsCreated) Native_blocks2.Dispose();
-                if (March_tris.IsCreated) March_tris.Dispose();
-                Debug.Log("Something weird happened with rendering code.");
-            }
+            Render_JobHandle.Complete();
+            IsRendering = false;
+            if (verts.IsCreated) verts.Dispose();
+            if (tris.IsCreated) tris.Dispose();
+            if (uv.IsCreated) uv.Dispose();
+            if (Native_blocks2.IsCreated) Native_blocks2.Dispose();
+            if (March_tris.IsCreated) March_tris.Dispose();
+            // Try to render until succeeded
+            update = true;
         }
 
     }
@@ -469,6 +421,9 @@ public class Chunk : MonoBehaviour
         public NativeList<Vector3> vertices;
         public NativeList<int> triangles;
         public NativeList<Vector2> uvs;
+
+        public NativeList<int> SubMeshTriangles_Positions;
+        public NativeList<int> SubMeshTriangles;
 
         // MeshData for Marching Cubes terrain
         public NativeList<int> Marching_triangles;
@@ -531,10 +486,10 @@ public class Chunk : MonoBehaviour
         //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Not that it's a problem (because it wouldn't be) other than more tris on scene.
         //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Just because of that, we are skipping the iterations.
         //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤
-        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       Also Y goes from (-1) to (ChunkSize - 1) because the ceiling is broken. I have to fix that.
         //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       
-        //      └─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘       Anyways, algorithm is now working properly, but it STILL generates weird artifacts, i might now know what causes it
-        // -X-Z                -X                 -X+Z  but i can't seem to find the issue in the code, it's probably something deeper than i think it is.
+        //      ├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤       
+        //      └─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘       
+        // -X-Z                -X                 -X+Z  
 
         // Greedy mesh flag for every direction of block
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_U;
@@ -546,8 +501,7 @@ public class Chunk : MonoBehaviour
 
         // RENDERING OPTIONS
         [ReadOnly] public bool UseGreedyMeshing; //TODO: Fix texturing (it's all stretched now) - Idea: Divide the mesh into submeshes and apply tri-planar shader for texturing.
-        [ReadOnly] public bool UseMarchingCubes; //TODO: Fix the +X -X corners, it's making weird artifacts now. Also allow to divide mesh into submeshes, so you can have independent blocks
-                                                 //      marched together
+        [ReadOnly] public bool UseMarchingCubes; //TODO: Texturing
 
         // MARCHING CUBES, Define this ONLY if you want to perform marching, otherwise, don't.
         [DeallocateOnJobCompletion] public NativeArray<float> MarchedBlocks;
@@ -673,7 +627,7 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
                                         // And lastly, set the textures onto those triangles.
-                                        
+                                        // Soon to be obsolete, tri-planar shader will take over
                                         uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + 0.001f));
                                         uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
                                         uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
@@ -1156,12 +1110,10 @@ public class Chunk : MonoBehaviour
                 //TODO: Fix the weird slope on +X and -X corner (+X+Y, -X+Y)
                 for (int x = 0; x < chunkSize; x++)
                 {
-                    for (int y = -1; y < chunkSize - 1; y++)
+                    for (int y = 0; y < chunkSize; y++)
                     {
                         for (int z = 0; z < chunkSize; z++)
                         {
-                            
-                                
                             //Get the values in the 8 neighbours which make up a cube
                             for (int i = 0; i < 8; i++)
                             {
@@ -1188,7 +1140,6 @@ public class Chunk : MonoBehaviour
                             //If the cube is entirely inside or outside of the surface, then there will be no intersections
                             if (edgeFlags != 0)
                             {
-
                                 //Find the point of intersection of the surface with each edge
                                 for (int i2 = 0; i2 < 12; i2++)
                                 {
@@ -1432,11 +1383,11 @@ public class Chunk : MonoBehaviour
                     {
                         //set blocks
                         int test = random.NextInt(-2, 2);
-                        if (ChunkCoordinates.y + y == 25)
+                        if (ChunkCoordinates.y + y == 25 + test)
                         {
                             _blocksNew[x + y * 16 + z * 256] = blocktype[1];
                         }
-                        else if (ChunkCoordinates.y + y < 25)
+                        else if (ChunkCoordinates.y + y < 25 + test)
                         {
                             _blocksNew[x + y * 16 + z * 256] = blocktype[1];
                         }
