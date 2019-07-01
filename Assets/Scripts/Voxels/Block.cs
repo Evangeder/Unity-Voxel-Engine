@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 using System;
+using System.IO;
 
 public struct Block
 {
@@ -11,7 +12,7 @@ public struct Block
         this = T;
     }
 
-    public Block(int ID, bool solid, int2 texture, bool usephysics = false, float physicstime = 0f)
+    public Block(int ID, bool solid, int2 texture, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -23,9 +24,11 @@ public struct Block
         this.Texture_West = texture;
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
+        this.Marched = false;
+        this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
-    public Block(int ID, bool solid, List<int2> textures, bool usephysics = false, float physicstime = 0f)
+    public Block(int ID, bool solid, int2[] textures, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -37,6 +40,24 @@ public struct Block
         this.Texture_West = textures[5];
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
+        this.Marched = false;
+        this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
+    }
+
+    public Block(int ID, bool solid, List<int2> textures, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
+    {
+        this.GetID = ID;
+        this.Solid = solid;
+        this.Texture_Up = textures[0];
+        this.Texture_Down = textures[1];
+        this.Texture_North = textures[2];
+        this.Texture_South = textures[3];
+        this.Texture_East = textures[4];
+        this.Texture_West = textures[5];
+        this.UsePhysics = usephysics;
+        this.PhysicsTime = physicstime;
+        this.Marched = false;
+        this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
     public Block(int ID)
@@ -51,72 +72,189 @@ public struct Block
         this.Texture_West = new int2();
         this.UsePhysics = false;
         this.PhysicsTime = new float();
+        this.Marched = false;
+        this.ShowOtherBlockFaces = 0;
     }
     
     public int GetID { get; }
 
-    public bool Solid { get; }
-    
+    //metadata
+    public bool Solid { get; set; }
     public int2 Texture_Up { get; }
     public int2 Texture_Down { get; }
     public int2 Texture_North { get; }
     public int2 Texture_South { get; }
     public int2 Texture_East { get; }
     public int2 Texture_West { get; }
-
     public bool UsePhysics { get; }
-
     public float PhysicsTime { get; }
+    public bool Marched { get; set; }
+    public int ShowOtherBlockFaces { get; }
 }
 
 public static class BlockData
 {
     public static int ChunkSize = 16;
     public static List<Block> byID = new List<Block>();
-    public static List<int2> textures = new List<int2>();
     public static float BlockTileSize = 0.25f;
+    //public static string TextureFilename;
+    //public static int2 TextureSize;
+    public static Texture2D BlockTexture;
 
+    public static int GetAddress(int x, int y, int z, int size = 16)
+    {
+        return (x + y * size + z * size * size);
+    }
 
     public static void InitalizeBlocks()
     {
-        List<bool> Solid = new List<bool>(); // This is for custom blocks
-        List<int2> textures;                 // This is for custom blocks
-        textures = new List<int2>() {
-            new int2(2, 0), // up
-            new int2(1, 0), // down
-            new int2(3, 0), // north
-            new int2(3, 0), // south
-            new int2(3, 0), // east
-            new int2(3, 0)  // west
-        };
+        BlockTexture = new Texture2D(128, 128);
 
-        byID.Add(new Block(0));                                   //        AIR
-        byID.Add(new Block(1, false, new int2(0, 0)));            //        TERRAIN
-        byID.Add(new Block(2));                                   //        WATER
-        byID.Add(new Block(3));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(4));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(5));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(6));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(7));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(8));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(9));                                   //        Placeholder: LIQUID
-        byID.Add(new Block(10));                                  //        Placeholder: LIQUID
-        byID.Add(new Block(11, true, new int2(0, 0)));            //        STONE
-        byID.Add(new Block(12, true, textures));                  //        GRASS
-        byID.Add(new Block(13, true, new int2(1, 0)));            //        GROUND
-        byID.Add(new Block(14, true, new int2(0, 0)));            //        COBBLESTONE / LACK OF TEXTURE, TODO
-        byID.Add(new Block(15, true, new int2(0, 0)));            //        SAND /        LACK OF TEXTURE, TODO
-        byID.Add(new Block(16, true, new int2(0, 0)));            //        GRAVEL /      LACK OF TEXTURE, TODO
-        byID.Add(new Block(17, true, new int2(0, 0)));            //        PLANKS /      LACK OF TEXTURE, TODO
-        textures = new List<int2>() { new int2(2, 1), new int2(2, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1) };
-        byID.Add(new Block(16, true, textures));                  //        WOOD (LOG)
-        byID.Add(new Block(16, true, new int2(0, 1)));            //        LEAVES
-        byID.Add(new Block(18, true, new int2(0, 0)));            //        GLASS /       LACK OF TEXTURE, TODO
+        if (!Directory.Exists(Application.dataPath + "/Mods"))
+            Directory.CreateDirectory(Application.dataPath + "/Mods");
 
-        textures.Add(new int2(0, 0)); // STONE
-        textures.Add(new int2(1, 0)); // GROUND
-        textures.Add(new int2(2, 0)); // GRASS
-        textures.Add(new int2(3, 0)); // GRASS_SIDE
+        IniFile Blocks_INI = new IniFile("/Mods/Blocks.ini");
+        if (Blocks_INI.KeyExists("TileSize"))
+        {
+            // Data exists, parse.
+            var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.CurrentCulture.Clone();
+            culture.NumberFormat.NumberDecimalSeparator = ".";
+            BlockTileSize = float.Parse(Blocks_INI.Read("TileSize"), culture);
+
+            if (File.Exists(Application.dataPath + "/Mods/" + Blocks_INI.Read("Texture_File")))
+            {
+                byte[] bytes = File.ReadAllBytes(Application.dataPath + "/Mods/" + Blocks_INI.Read("Texture_File"));
+                BlockTexture = new Texture2D(int.Parse(Blocks_INI.Read("Texture_Width")), int.Parse(Blocks_INI.Read("Texture_Height")), TextureFormat.RGB24, false);
+                BlockTexture.filterMode = FilterMode.Point;
+                BlockTexture.LoadImage(bytes);
+            } else {
+                Debug.Log("<color=red><b>COULD NOT FIND TEXTURES FILE!</b></color>, game will continue to run without texturing.\n"
+                    + "Please create or drag Blocks.png file to path: <i>" + Application.dataPath + "/Mods/</i>.");
+            }
+            int MaxBlocks = int.Parse(Blocks_INI.Read("Blocktypes"));
+            for (int i = 0; i < MaxBlocks; i++)
+            {
+                if (Blocks_INI.KeyExists("Texture_Up", "" + i))
+                {
+                    int2[] tex = new int2[6];
+                    string[] tempstr2 = Blocks_INI.Read("Texture_Up", "" + i).Split(',');
+                    tex[0] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
+                    tempstr2 = Blocks_INI.Read("Texture_Down", "" + i).Split(',');
+                    tex[1] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
+                    tempstr2 = Blocks_INI.Read("Texture_North", "" + i).Split(',');
+                    tex[2] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
+                    tempstr2 = Blocks_INI.Read("Texture_South", "" + i).Split(',');
+                    tex[3] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
+                    tempstr2 = Blocks_INI.Read("Texture_East", "" + i).Split(',');
+                    tex[4] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
+                    tempstr2 = Blocks_INI.Read("Texture_West", "" + i).Split(',');
+                    tex[5] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
+                    
+                    byID.Add(new Block(i, bool.Parse(Blocks_INI.Read("Solid", "" + i)),
+                        tex,
+                        bool.Parse(Blocks_INI.Read("Uses_Physics", "" + i)),
+                        int.Parse(Blocks_INI.Read("Physics_Time", "" + i)),
+                        int.Parse(Blocks_INI.Read("Show_Other_Block_Faces", "" + i))));
+                } else {
+                    string[] tempstr2 = Blocks_INI.Read("Texture", "" + i).Split(',');
+                    byID.Add(new Block(i, bool.Parse(Blocks_INI.Read("Solid", "" + i)),
+                        new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1])),
+                        bool.Parse(Blocks_INI.Read("Uses_Physics", "" + i)),
+                        int.Parse(Blocks_INI.Read("Physics_Time", "" + i)),
+                        int.Parse(Blocks_INI.Read("Show_Other_Block_Faces", "" + i))));
+                }
+            }
+        } else {
+            // Create new, sample file.
+
+            Blocks_INI.Write("Texture_File", "Blocks.png");
+            Blocks_INI.Write("Texture_Width", "128");
+            Blocks_INI.Write("Texture_Height", "128");
+            Blocks_INI.Write("TileSize", "0.25");
+
+            List<int2> textures;                 // This is for custom blocks
+            textures = new List<int2>() {
+                new int2(2, 0), // up
+                new int2(1, 0), // down
+                new int2(3, 0), // north
+                new int2(3, 0), // south
+                new int2(3, 0), // east
+                new int2(3, 0)  // west
+            };
+
+            byID.Add(new Block(0));                                   //       AIR
+            byID.Add(new Block(1, true, new int2(0, 0)));             //       STONE
+            byID.Add(new Block(2, true, textures));                   //       GRASS
+            byID.Add(new Block(3, true, new int2(1, 0)));             //       DIRT
+            byID.Add(new Block(4, true, new int2(0, 0)));             //       COBBLESTONE
+            byID.Add(new Block(5, true, new int2(0, 0)));             //       PLANKS
+            byID.Add(new Block(6, true, new int2(0, 0)));             //       SAPPLING
+            byID.Add(new Block(7, true, new int2(0, 0)));             //       BEDROCK
+            byID.Add(new Block(8, true, new int2(0, 0)));             //       FLOWING WATER
+            byID.Add(new Block(9, true, new int2(0, 0)));             //       STATIONARY WATER
+            byID.Add(new Block(10, true, new int2(0, 0)));            //       FLOWING LAVA
+            byID.Add(new Block(11, true, new int2(0, 0)));            //       STATIONARY LAVA
+            byID.Add(new Block(12, true, new int2(0, 0)));            //       SAND
+            byID.Add(new Block(13, true, new int2(0, 0)));            //       GRAVEL
+            byID.Add(new Block(14, true, new int2(0, 0)));            //       GOLD ORE
+            byID.Add(new Block(15, true, new int2(0, 0)));            //       IRON ORE
+            byID.Add(new Block(16, true, new int2(0, 0)));            //       COAL ORE
+            textures = new List<int2>() { new int2(2, 1), new int2(2, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1) };
+            byID.Add(new Block(17, true, textures));                  //       WOOD (LOG)
+            byID.Add(new Block(18, true, new int2(0, 0), false, 0, 1));//      LEAVES
+            byID.Add(new Block(19, true, new int2(0, 0)));            //       SPONGE
+            byID.Add(new Block(20, true, new int2(0, 0), false, 0, 2));//      GLASS
+            byID.Add(new Block(21, true, new int2(0, 0)));            //       CLOTH (RED)
+            byID.Add(new Block(22, true, new int2(0, 0)));            //       CLOTH (ORANGE)
+            byID.Add(new Block(23, true, new int2(0, 0)));            //       CLOTH (YELLOW)
+            byID.Add(new Block(24, true, new int2(0, 0)));            //       CLOTH (CHARTREUSE)
+            byID.Add(new Block(25, true, new int2(0, 0)));            //       CLOTH (GREEN)
+            byID.Add(new Block(26, true, new int2(0, 0)));            //       CLOTH (SPRING GREEN)
+            byID.Add(new Block(27, true, new int2(0, 0)));            //       CLOTH (CYAN)
+            byID.Add(new Block(28, true, new int2(0, 0)));            //       CLOTH (CAPRI)
+            byID.Add(new Block(29, true, new int2(0, 0)));            //       CLOTH (ULTRAMARINE)
+            byID.Add(new Block(30, true, new int2(0, 0)));            //       CLOTH (VIOLET)
+            byID.Add(new Block(31, true, new int2(0, 0)));            //       CLOTH (PURPLE)
+            byID.Add(new Block(32, true, new int2(0, 0)));            //       CLOTH (MAGNETA)
+            byID.Add(new Block(33, true, new int2(0, 0)));            //       CLOTH (ROSE)
+
+            Blocks_INI.Write("Blocktypes", (byID.Count - 1) + "");
+
+            for (int i = 0; i < byID.Count; i++)
+            {
+                Blocks_INI.Write("Solid", byID[i].Solid + "", i + "");
+                Blocks_INI.Write("Show_Other_Block_Faces", byID[i].ShowOtherBlockFaces + "", "" + i);
+                if ((byID[i].Texture_East.x == byID[i].Texture_Up.x && byID[i].Texture_East.y == byID[i].Texture_Up.y) &&
+                        (byID[i].Texture_West.x == byID[i].Texture_Up.x && byID[i].Texture_West.y == byID[i].Texture_Up.y) &&
+                        (byID[i].Texture_North.x == byID[i].Texture_Up.x && byID[i].Texture_North.y == byID[i].Texture_Up.y) &&
+                        (byID[i].Texture_South.x == byID[i].Texture_Up.x && byID[i].Texture_South.y == byID[i].Texture_Up.y) &&
+                        (byID[i].Texture_Down.x == byID[i].Texture_Up.x && byID[i].Texture_Down.y == byID[i].Texture_Up.y))
+                {
+                    Blocks_INI.Write("Texture", byID[i].Texture_Up.x + "," + byID[i].Texture_Up.y, "" + i);
+                }
+                else {
+                    Blocks_INI.Write("Texture_Up", byID[i].Texture_Up.x + "," + byID[i].Texture_Up.y, "" + i);
+                    Blocks_INI.Write("Texture_Down", byID[i].Texture_Down.x + "," + byID[i].Texture_Down.y, "" + i);
+                    Blocks_INI.Write("Texture_North", byID[i].Texture_North.x + "," + byID[i].Texture_North.y, "" + i);
+                    Blocks_INI.Write("Texture_South", byID[i].Texture_South.x + "," + byID[i].Texture_South.y, "" + i);
+                    Blocks_INI.Write("Texture_East", byID[i].Texture_East.x + "," + byID[i].Texture_East.y, "" + i);
+                    Blocks_INI.Write("Texture_West", byID[i].Texture_West.x + "," + byID[i].Texture_West.y, "" + i);
+                }
+                Blocks_INI.Write("Uses_Physics", byID[i].UsePhysics + "", i + "");
+                Blocks_INI.Write("Physics_Time", byID[i].PhysicsTime + "", i + "");
+            }
+
+            if (File.Exists(Application.dataPath + "/Mods/Blocks.png"))
+            {
+                byte[] bytes = File.ReadAllBytes(Application.dataPath + "/Mods/Blocks.png");
+                Texture2D BlockTexture = new Texture2D(128, 128, TextureFormat.RGB24, false);
+                BlockTexture.filterMode = FilterMode.Trilinear;
+                BlockTexture.LoadImage(bytes);
+            } else {
+                Debug.Log("<color=red><b>COULD NOT FIND TEXTURES FILE!</b></color>, game will continue to run without texturing.\n"
+                    + "Please create or drag Blocks.png file to path: <i>" + Application.dataPath + "/Mods/</i>.");
+            }
+        }
     }
 }
 
@@ -457,3 +595,4 @@ public static class MarchingCubesTables
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
     };
 }
+ 

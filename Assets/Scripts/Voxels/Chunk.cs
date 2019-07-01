@@ -1,5 +1,4 @@
-﻿using MarchingCubesProject;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst;
@@ -26,14 +25,13 @@ public class Chunk : MonoBehaviour
     public GameObject Chunk_Smoothed;
 
     [Header("Marching Cubes Settings")]
-    [Range(0.501f, 1f)]
-    public float MarchingCubesSmoothness = 1f;
+    [Range(0.501f, 1f)] public float MarchingCubesSmoothness = 1f;
 
     [Header("Force Update and Testing")]
     public bool update = false;
     public bool TestMapgen = false;
 
-    [Header("Job System")]
+    // Job system
     NativeArray<Block> Native_blocks;
     NativeArray<Block> Native_blocks2;
     NativeArray<Block> blocktypes;
@@ -44,15 +42,18 @@ public class Chunk : MonoBehaviour
     NativeList<int> tris;
     NativeList<int> subTriangles_positions;
     NativeList<int> subTriangles_values;
+    NativeList<Vector2> March_UVs;
     NativeList<Vector2> uv;
     NativeList<int> March_tris;
     private bool IsGenerating = false;
     private bool IsRendering = false;
-
-
-    [Header("Mesh")]
+    
+    // Mesh info
     MeshFilter filter;
     MeshCollider coll;
+
+    public Vector2 MarchingTexture = new Vector2(0,0);
+    public float3 DebugMarching = new int3(0, 0, 0);
     
     void Awake()
     {
@@ -149,12 +150,15 @@ public class Chunk : MonoBehaviour
         // This is to prevent memory leaking.
         if (!MapGen_JobHandle.IsCompleted) MapGen_JobHandle.Complete();
         if (!Render_JobHandle.IsCompleted) Render_JobHandle.Complete();
+        if (subTriangles_positions.IsCreated) subTriangles_positions.Dispose();
+        if (subTriangles_values.IsCreated) subTriangles_values.Dispose();
         if (Native_blocks.IsCreated) Native_blocks.Dispose();
         if (blocktypes.IsCreated) blocktypes.Dispose();
         if (verts.IsCreated) verts.Dispose();
         if (tris.IsCreated) tris.Dispose();
         if (March_tris.IsCreated) March_tris.Dispose();
         if (uv.IsCreated) uv.Dispose();
+        if (March_UVs.IsCreated) March_UVs.Dispose();
     }
 
     void LateUpdate()
@@ -189,8 +193,10 @@ public class Chunk : MonoBehaviour
             // You have to set triangles for every subMesh you created, you can skip those if you want ofc.
             filter.mesh.SetTriangles(tris.ToArray(), 0);
             filter.mesh.SetTriangles(March_tris.ToArray(), 1);
-            Vector2[] uvs = uv.ToArray();
-            System.Array.Resize(ref uvs, verts.Length);
+            Vector2[] uvs = uv.ToArray().Concat(March_UVs.ToArray()).ToArray();
+
+            //System.Array.Resize(ref uvs, verts.Length);
+            //Debug.Log("<b>OUT JOB</b> vertices.Length: " + verts.Length + ", March_UVs: " + March_UVs.Length + ", UVs: " + uv.Length + "; Verts/Combined: " + verts.Length + "/" + uvs.Length);
             filter.mesh.uv = uvs;
             filter.mesh.MarkDynamic();
             filter.mesh.RecalculateNormals();
@@ -204,7 +210,7 @@ public class Chunk : MonoBehaviour
             mesh.RecalculateNormals();
 
             coll.sharedMesh = mesh;
-
+            subTriangles_positions.Dispose(); subTriangles_values.Dispose(); March_UVs.Dispose();
             verts.Dispose(); tris.Dispose(); uv.Dispose(); March_tris.Dispose();
         }
     }
@@ -298,9 +304,7 @@ public class Chunk : MonoBehaviour
 
             subTriangles_positions = new NativeList<int>(Allocator.TempJob);
             subTriangles_values = new NativeList<int>(Allocator.TempJob);
-
-            NativeHashMap<int, NativeList<int>> test = new NativeHashMap<int, NativeList<int>>(BlockData.byID.Count, Allocator.TempJob);
-            
+            March_UVs = new NativeList<Vector2>(Allocator.TempJob);
 
             // Marching cubes mesh info
 
@@ -325,9 +329,12 @@ public class Chunk : MonoBehaviour
             T_TriangleConnectionTable.CopyFrom(MarchingCubesTables.TriangleConnectionTable);
             NativeArray<int> T_VertexOffset = new NativeArray<int>(MarchingCubesTables.VertexOffset.Length, Allocator.TempJob);
             T_VertexOffset.CopyFrom(MarchingCubesTables.VertexOffset);
-            
+
             var job = new Job_RenderChunk()
             {
+                TestTexture = MarchingTexture,
+                DebugMarching = DebugMarching,
+
                 // TILING SIZE FOR TEXTURING
                 tileSize = BlockData.BlockTileSize,
 
@@ -341,6 +348,9 @@ public class Chunk : MonoBehaviour
                 vertices = verts,
                 triangles = tris,
                 uvs = uv,
+                SubMeshTriangles_Positions = subTriangles_positions,
+                SubMeshTriangles = subTriangles_values,
+                March_UVs = March_UVs,
 
                 // BLOCKS OF TARGET AND NEIGHBOUR CHUNKS
                 _blocks = Native_blocks2,
@@ -384,14 +394,13 @@ public class Chunk : MonoBehaviour
                 _blocks_greedy_W = GreedyBlocks_W,
 
                 // MARCHING CUBES
-                UseMarchingCubes = true,
                 Table_CubeEdgeFlags = T_CubeEdgeFlags,
                 Table_EdgeConnection = T_EdgeConnection,
                 Table_EdgeDirection = T_EdgeDirection,
                 Table_TriangleConnection = T_TriangleConnectionTable,
                 Table_VertexOffset = T_VertexOffset,
-                Marching_triangles = March_tris,
-                MarchedBlocks = new NativeArray<float>(5832, Allocator.TempJob)
+                Marching_triangles = March_tris
+                //MarchedBlocks = new NativeArray<float>(5832, Allocator.TempJob)
 
             };
 
@@ -406,13 +415,18 @@ public class Chunk : MonoBehaviour
             if (uv.IsCreated) uv.Dispose();
             if (Native_blocks2.IsCreated) Native_blocks2.Dispose();
             if (March_tris.IsCreated) March_tris.Dispose();
+            if (subTriangles_positions.IsCreated) subTriangles_positions.Dispose();
+            if (subTriangles_values.IsCreated) subTriangles_values.Dispose();
+            if (March_UVs.IsCreated) March_UVs.Dispose();
             // Try to render until succeeded
             update = true;
         }
-
     }
 
-    [BurstCompile]
+    // Enable burst compilation for better performace
+    // Warning: when burst is ENABLED, you may not refference MonoBehaviour directly.
+    // For example: Debug.Log("test") WILL throw out an exception.
+    [BurstCompile] 
     private struct Job_RenderChunk : IJob
     {
         public int chunkSize;
@@ -424,6 +438,10 @@ public class Chunk : MonoBehaviour
 
         public NativeList<int> SubMeshTriangles_Positions;
         public NativeList<int> SubMeshTriangles;
+        public NativeList<Vector2> March_UVs;
+
+        public Vector2 TestTexture;
+        public float3 DebugMarching;
 
         // MeshData for Marching Cubes terrain
         public NativeList<int> Marching_triangles;
@@ -435,19 +453,19 @@ public class Chunk : MonoBehaviour
         [ReadOnly] public NativeArray<Block> blocktype;
 
         // Block arrays from THIS chunk + neighbour chunks
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusX;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusX;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusY;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusY;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusZ;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusX;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusX;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusY;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusY;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusZ;
 
         // Corner chunks (XZ)
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusXZ;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusXZ;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_MinusXPlusZ;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> _blocks_PlusXMinusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusXZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusXZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_MinusXPlusZ;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusXMinusZ;
 
         // Corner chunks (XY)
         [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> _blocks_PlusXY;
@@ -501,16 +519,15 @@ public class Chunk : MonoBehaviour
 
         // RENDERING OPTIONS
         [ReadOnly] public bool UseGreedyMeshing; //TODO: Fix texturing (it's all stretched now) - Idea: Divide the mesh into submeshes and apply tri-planar shader for texturing.
-        [ReadOnly] public bool UseMarchingCubes; //TODO: Texturing
 
         // MARCHING CUBES, Define this ONLY if you want to perform marching, otherwise, don't.
-        [DeallocateOnJobCompletion] public NativeArray<float> MarchedBlocks;
+        //[DeallocateOnJobCompletion] public NativeArray<float> MarchedBlocks;
 
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_EdgeConnection;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<float> Table_EdgeDirection;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_CubeEdgeFlags;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_TriangleConnection;
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> Table_VertexOffset;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> Table_EdgeConnection;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<float> Table_EdgeDirection;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> Table_CubeEdgeFlags;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> Table_TriangleConnection;
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> Table_VertexOffset;
 
         public static int GetAddress(int x, int y, int z, int size = 16)
         {
@@ -519,6 +536,8 @@ public class Chunk : MonoBehaviour
 
         public void Execute()
         {
+            bool skipmarching = true;
+            NativeArray<float> MarchedBlocks = new NativeArray<float>(5832, Allocator.Temp);
             Block tbmx, tbpx, tbmy, tbpy, tbmz, tbpz, tb;
             int MCS = chunkSize + 2;
 
@@ -529,20 +548,20 @@ public class Chunk : MonoBehaviour
                     for (int z = 0; z < chunkSize; z++)
                     {
                         if (_blocks[GetAddress(x,y,z)].GetID != 0) {
-                            if (_blocks[x + y * 16 + z * 256].GetID == 1) {
-                                // TERRAIN ( Marching Cubes )
-                                if (UseMarchingCubes)
-                                {
-                                    // TODO: Think of changing the 1f value to random OR average of neighbour 3-4 blocks
-                                    MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = 1f;
-                                }
-                            } else if (_blocks[GetAddress(x, y, z)].GetID == 2) {
+                            /*if (_blocks[GetAddress(x, y, z)].GetID == 8) {
                                 // WATER
-                                if (UseMarchingCubes)
-                                {
-                                    //MarchedBlocks_Water[x + y * 16 + z * 256] = 1f;
-                                }
-                            } else if (_blocks[GetAddress(x, y, z)].GetID > 10) {
+                                //MarchedBlocks_Water[GetAddress(x, y, z)] = 1f;
+                            } else if (_blocks[GetAddress(x, y, z)].GetID == 9) {
+
+                            } else if (_blocks[GetAddress(x, y, z)].GetID == 10) {
+
+                            } else if (_blocks[GetAddress(x, y, z)].GetID == 11) {
+
+                            } else {*/
+                            if (_blocks[GetAddress(x, y, z)].Marched) {
+                                skipmarching = false;
+                                MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = 1f;
+                            } else {
                                 if (x == 0) tbmx = _blocks_MinusX[GetAddress(chunkSize - 1, y, z)]; else tbmx = _blocks[GetAddress(x - 1, y, z)];
                                 if (x == chunkSize - 1) tbpx = _blocks_PlusX[GetAddress(0, y, z)]; else tbpx = _blocks[GetAddress(x + 1, y, z)];
                                 if (y == 0) tbmy = _blocks_MinusY[GetAddress(x, chunkSize - 1, z)]; else tbmy = _blocks[GetAddress(x, y - 1, z)];
@@ -551,13 +570,12 @@ public class Chunk : MonoBehaviour
                                 if (z == chunkSize - 1) tbpz = _blocks_PlusZ[GetAddress(x, y, 0)]; else tbpz = _blocks[GetAddress(x, y, z + 1)];
 
                                 tb = _blocks[GetAddress(x, y, z)];
-
-
-                                if (UseGreedyMeshing)
+                                    
+                                if (UseGreedyMeshing && !tb.Marched)
                                 {
                                     // XZ - Up
                                     // Check if tb (thisblock) is solid, tbpy (temporary block plus Y) is solid and if this block is not already marked as greedy.
-                                    if (tb.Solid && !tbpy.Solid && !_blocks_greedy_U[x + y * 16 + z * 256])
+                                    if (tb.Solid && (!tbpy.Solid || (tb.ShowOtherBlockFaces == 2 && tbpy.GetID != tb.GetID) || tb.ShowOtherBlockFaces == 1) && !_blocks_greedy_U[GetAddress(x, y, z)] && !tb.Marched)
                                     {
                                         // Declare maximum value for Z, just for first iteration it has to be ChunkSize-1
                                         int max_z = 15;
@@ -565,32 +583,43 @@ public class Chunk : MonoBehaviour
                                         int temp_max_z = 15;
                                         // greed_x is just a value to store vertex's max X position
                                         int greed_x = x;
-                                        // and last but not least, bcoken. This is needed to break out of both loops (X and Z)
+                                        // and last but not least, broken. This is needed to break out of both loops (X and Z)
                                         bool broken = false;
+
 
                                         // Iterate X -> ChunkSize
                                         for (int x_greedy = x; x_greedy < chunkSize; x_greedy++)
                                         {
                                             // Check if current's iteration X is bigger than starting X and if first block in this iteration is the same, if not - break.
-                                            if (x_greedy > x && _blocks[x_greedy + y * 16 + z * 256].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x_greedy, y, z)].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x_greedy, y, z)].Marched) break;
+
                                             // Iterate Z -> Max_Z (ChunkSize - 1 for first iteration)
                                             for (int z_greedy = z; z_greedy <= max_z; z_greedy++)
                                             {
                                                 // Macro to Y + 1 block to see if it's solid. If current Y == 15, get Y = 0 at Y + 1 chunk
-                                                bool PlusY;
-                                                if (y == 15) PlusY = _blocks_PlusY[x_greedy + z_greedy * 256].Solid;
-                                                else PlusY = _blocks[x_greedy + (y + 1) * 16 + z_greedy * 256].Solid;
+                                                bool PlusY, IsThisBlockMarched;
+
+                                                if (y == 15) {
+                                                    PlusY = _blocks_PlusY[GetAddress(x_greedy, 0, z_greedy)].Solid;
+                                                    if (_blocks_PlusY[GetAddress(x_greedy, 0, z_greedy)].ShowOtherBlockFaces > 0) PlusY = false;
+                                                }
+                                                else {
+                                                    PlusY = _blocks[GetAddress(x_greedy, y + 1, z_greedy)].Solid;
+                                                    if (_blocks[GetAddress(x_greedy, y + 1, z_greedy)].ShowOtherBlockFaces > 0) PlusY = false;
+                                                }
+                                                
+                                                // Get current block and check if it uses marching cubes
+                                                IsThisBlockMarched = _blocks[GetAddress(x_greedy, y, z_greedy)].Marched;
 
                                                 // Check if this block is marked as greedy, compare blockID with starting block and check if PlusY is solid.
-                                                if (!_blocks_greedy_U[x_greedy + y * 16 + z_greedy * 256] && tb.GetID == _blocks[x_greedy + y * 16 + z_greedy * 256].GetID && !PlusY)
+                                                if (!_blocks_greedy_U[GetAddress(x_greedy, y, z_greedy)] && tb.GetID == _blocks[GetAddress(x_greedy, y, z_greedy)].GetID && !PlusY && !IsThisBlockMarched)
                                                 {
                                                     // Set the temporary value of Max_Z to current iteration of Z
                                                     if (x_greedy == x) temp_max_z = z_greedy;
                                                     // Mark the current block as greedy
-                                                    _blocks_greedy_U[x_greedy + y * 16 + z_greedy * 256] = true;
-                                                }
-                                                else
-                                                {
+                                                    _blocks_greedy_U[GetAddress(x_greedy, y, z_greedy)] = true;
+                                                } else {
                                                     // If block in current iteration was different or already greedy, break
                                                     // Then, reverse last iteration to non-greedy state.
                                                     if (z_greedy <= max_z && x_greedy > x)
@@ -598,7 +627,7 @@ public class Chunk : MonoBehaviour
                                                         for (int z1 = z; z1 < z_greedy; z1++)
                                                         {
                                                             // Reverse the greedy to false
-                                                            _blocks_greedy_U[x_greedy + y * 16 + z1 * 256] = false;
+                                                            _blocks_greedy_U[GetAddress(x_greedy, y, z1)] = false;
                                                         }
                                                         // Break out of both loops
                                                         broken = true;
@@ -628,14 +657,14 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 1);
                                         // And lastly, set the textures onto those triangles.
                                         // Soon to be obsolete, tri-planar shader will take over
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.001f, tileSize * tb.Texture_Up.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.005f, tileSize * tb.Texture_Up.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.005f, tileSize * tb.Texture_Up.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.005f, tileSize * tb.Texture_Up.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.005f, tileSize * tb.Texture_Up.y + 0.005f));
                                     }
 
                                     // XZ - Down
-                                    if (tb.Solid && !tbmy.Solid && !_blocks_greedy_D[x + y * 16 + z * 256])
+                                    if (tb.Solid && (!tbmy.Solid || (tbmy.ShowOtherBlockFaces == 2 && tbmy.GetID != tb.GetID) || tb.ShowOtherBlockFaces == 1) && !_blocks_greedy_D[GetAddress(x, y, z)] && !tb.Marched)
                                     {
                                         int max_z = 15;
                                         int temp_max_z = 15;
@@ -644,27 +673,35 @@ public class Chunk : MonoBehaviour
 
                                         for (int x_greedy = x; x_greedy < chunkSize; x_greedy++)
                                         {
-                                            if (x_greedy > x && _blocks[x_greedy + y * 16 + z * 256].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x, y, z)].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x, y, z)].Marched) break;
 
                                             for (int z_greedy = z; z_greedy <= max_z; z_greedy++)
                                             {
-                                                bool MinusY;
-                                                if (y == 0) MinusY = _blocks_MinusY[x_greedy + (15 * 16) + z_greedy * 256].Solid;
-                                                else MinusY = _blocks[x_greedy + (y - 1) * 16 + z_greedy * 256].Solid;
+                                                bool MinusY, IsThisBlockMarched;
 
-                                                if (!_blocks_greedy_D[x_greedy + y * 16 + z_greedy * 256] && tb.GetID == _blocks[x_greedy + y * 16 + z_greedy * 256].GetID && !MinusY)
+                                                if (y == 0) {
+                                                    MinusY = _blocks_MinusY[GetAddress(x_greedy, 15, z_greedy)].Solid;
+                                                    if (_blocks_MinusY[GetAddress(x_greedy, 15, z_greedy)].ShowOtherBlockFaces > 0) MinusY = false;
+                                                } else {
+                                                    MinusY = _blocks[GetAddress(x_greedy, y - 1, z_greedy)].Solid;
+                                                    if (_blocks[GetAddress(x_greedy, y - 1, z_greedy)].ShowOtherBlockFaces > 0) MinusY = false;
+                                                }
+
+
+                                                IsThisBlockMarched = _blocks[GetAddress(x_greedy, y, z_greedy)].Marched;
+
+                                                if (!_blocks_greedy_D[GetAddress(x_greedy, y, z_greedy)] && tb.GetID == _blocks[GetAddress(x_greedy, y, z_greedy)].GetID && !MinusY && !IsThisBlockMarched)
                                                 {
                                                     if (x_greedy == x) temp_max_z = z_greedy;
-                                                    _blocks_greedy_D[x_greedy + y * 16 + z_greedy * 256] = true;
+                                                    _blocks_greedy_D[GetAddress(x_greedy, y, z_greedy)] = true;
 
-                                                }
-                                                else
-                                                {
+                                                } else {
                                                     if (z_greedy <= max_z && x_greedy > x)
                                                     {
                                                         for (int z1 = z; z1 < z_greedy; z1++)
                                                         {
-                                                            _blocks_greedy_D[x_greedy + y * 16 + z1 * 256] = false;
+                                                            _blocks_greedy_D[GetAddress(x_greedy, y, z1)] = false;
                                                         }
                                                         broken = true;
                                                     }
@@ -686,14 +723,14 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.001f, tileSize * tb.Texture_Down.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.001f, tileSize * tb.Texture_Down.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.001f, tileSize * tb.Texture_Down.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.001f, tileSize * tb.Texture_Down.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.005f, tileSize * tb.Texture_Down.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.005f, tileSize * tb.Texture_Down.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.005f, tileSize * tb.Texture_Down.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.005f, tileSize * tb.Texture_Down.y + 0.005f));
                                     }
 
                                     // XY - East
-                                    if (tb.Solid && !tbpz.Solid && !_blocks_greedy_W[x + y * 16 + z * 256])
+                                    if (tb.Solid && (!tbpz.Solid || (tbpz.ShowOtherBlockFaces == 2 && tbpz.GetID != tb.GetID) || tb.ShowOtherBlockFaces == 1) && !_blocks_greedy_W[GetAddress(x, y, z)] && !tb.Marched)
                                     {
                                         int max_y = 15;
                                         int temp_max_y = 15;
@@ -702,27 +739,34 @@ public class Chunk : MonoBehaviour
 
                                         for (int x_greedy = x; x_greedy < chunkSize; x_greedy++)
                                         {
-                                            if (x_greedy > x && _blocks[x_greedy + y * 16 + z * 256].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x_greedy, y, z)].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x_greedy, y, z)].Marched) break;
 
                                             for (int y_greedy = y; y_greedy <= max_y; y_greedy++)
                                             {
-                                                bool PlusZ;
-                                                if (z == 15) PlusZ = _blocks_PlusZ[x_greedy + y_greedy * 16].Solid;
-                                                else PlusZ = _blocks[x_greedy + y_greedy * 16 + (z + 1) * 256].Solid;
+                                                bool PlusZ, IsThisBlockMarched;
 
-                                                if (!_blocks_greedy_W[x_greedy + y_greedy * 16 + z * 256] && tb.GetID == _blocks[x_greedy + y_greedy * 16 + z * 256].GetID && !PlusZ)
+                                                if (z == 15) {
+                                                    PlusZ = _blocks_PlusZ[GetAddress(x_greedy, y_greedy, 0)].Solid;
+                                                    if (_blocks_PlusZ[GetAddress(x_greedy, y_greedy, 0)].ShowOtherBlockFaces > 0) PlusZ = false;
+                                                } else {
+                                                    PlusZ = _blocks[GetAddress(x_greedy, y_greedy, z + 1)].Solid;
+                                                    if (_blocks[GetAddress(x_greedy, y_greedy, z + 1)].ShowOtherBlockFaces > 0) PlusZ = false;
+                                                }
+
+                                                IsThisBlockMarched = _blocks[GetAddress(x_greedy, y_greedy, z)].Marched;
+
+                                                if (!_blocks_greedy_W[GetAddress(x_greedy, y_greedy, z)] && tb.GetID == _blocks[GetAddress(x_greedy, y_greedy, z)].GetID && !PlusZ && !IsThisBlockMarched)
                                                 {
                                                     if (x_greedy == x) temp_max_y = y_greedy;
-                                                    _blocks_greedy_W[x_greedy + y_greedy * 16 + z * 256] = true;
+                                                    _blocks_greedy_W[GetAddress(x_greedy, y_greedy, z)] = true;
 
-                                                }
-                                                else
-                                                {
+                                                } else {
                                                     if (y_greedy <= max_y && x_greedy > x)
                                                     {
                                                         for (int y1 = z; y1 < y_greedy; y1++)
                                                         {
-                                                            _blocks_greedy_W[x_greedy + y1 * 16 + z * 256] = false;
+                                                            _blocks_greedy_W[GetAddress(x_greedy, y1, z)] = false;
                                                         }
                                                         broken = true;
                                                     }
@@ -744,14 +788,14 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + 0.005f));
                                     }
 
                                     // XY - West
-                                    if (tb.Solid && !tbmz.Solid && !_blocks_greedy_E[x + y * 16 + z * 256])
+                                    if (tb.Solid && (!tbmz.Solid || (tbmz.ShowOtherBlockFaces == 2 && tbmz.GetID != tb.GetID) || tb.ShowOtherBlockFaces == 1) && !_blocks_greedy_E[GetAddress(x, y, z)] && !tb.Marched)
                                     {
                                         int max_y = 15;
                                         int temp_max_y = 15;
@@ -760,27 +804,34 @@ public class Chunk : MonoBehaviour
 
                                         for (int x_greedy = x; x_greedy < chunkSize; x_greedy++)
                                         {
-                                            if (x_greedy > x && _blocks[x_greedy + y * 16 + z * 256].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x_greedy, y, z)].GetID != tb.GetID) break;
+                                            if (x_greedy > x && _blocks[GetAddress(x_greedy, y, z)].Marched) break;
 
                                             for (int y_greedy = y; y_greedy <= max_y; y_greedy++)
                                             {
-                                                bool MinusZ;
-                                                if (z == 0) MinusZ = _blocks_MinusZ[x_greedy + y_greedy * 16 + 15 * 256].Solid;
-                                                else MinusZ = _blocks[x_greedy + y_greedy * 16 + (z - 1) * 256].Solid;
+                                                bool MinusZ, IsThisBlockMarched;
 
-                                                if (!_blocks_greedy_E[x_greedy + y_greedy * 16 + z * 256] && tb.GetID == _blocks[x_greedy + y_greedy * 16 + z * 256].GetID && !MinusZ)
+                                                if (z == 0) {
+                                                    MinusZ = _blocks_MinusZ[GetAddress(x_greedy, y_greedy, 15)].Solid;
+                                                    if (_blocks_MinusZ[GetAddress(x_greedy, y_greedy, 15)].ShowOtherBlockFaces > 0) MinusZ = false;
+                                                } else {
+                                                    MinusZ = _blocks[GetAddress(x_greedy, y_greedy, z - 1)].Solid;
+                                                    if (_blocks[GetAddress(x_greedy, y_greedy, z - 1)].ShowOtherBlockFaces > 0) MinusZ = false;
+                                                }
+
+                                                IsThisBlockMarched = _blocks[GetAddress(x_greedy, y_greedy, z)].Marched;
+
+                                                if (!_blocks_greedy_E[GetAddress(x_greedy, y_greedy, z)] && tb.GetID == _blocks[GetAddress(x_greedy, y_greedy, z)].GetID && !MinusZ && !IsThisBlockMarched)
                                                 {
                                                     if (x_greedy == x) temp_max_y = y_greedy;
-                                                    _blocks_greedy_E[x_greedy + y_greedy * 16 + z * 256] = true;
+                                                    _blocks_greedy_E[GetAddress(x_greedy, y_greedy, z)] = true;
 
-                                                }
-                                                else
-                                                {
+                                                } else {
                                                     if (y_greedy <= max_y && x_greedy > x)
                                                     {
                                                         for (int y1 = z; y1 < y_greedy; y1++)
                                                         {
-                                                            _blocks_greedy_E[x_greedy + y1 * 16 + z * 256] = false;
+                                                            _blocks_greedy_E[GetAddress(x_greedy, y1, z)] = false;
                                                         }
                                                         broken = true;
                                                     }
@@ -801,14 +852,14 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + 0.005f));
                                     }
 
                                     // YZ - North
-                                    if (tb.Solid && !tbpx.Solid && !_blocks_greedy_N[x + y * 16 + z * 256])
+                                    if (tb.Solid && (!tbpx.Solid || (tbpx.ShowOtherBlockFaces == 2 && tbpx.GetID != tb.GetID) || tb.ShowOtherBlockFaces == 1) && !_blocks_greedy_N[GetAddress(x, y, z)] && !tb.Marched)
                                     {
                                         int max_z = 15;
                                         int temp_max_z = 15;
@@ -817,27 +868,32 @@ public class Chunk : MonoBehaviour
 
                                         for (int y_greedy = y; y_greedy < chunkSize; y_greedy++)
                                         {
-                                            if (y_greedy > y && _blocks[x + y_greedy * 16 + z * 256].GetID != tb.GetID) break;
+                                            if (y_greedy > y && _blocks[GetAddress(x, y_greedy, z)].GetID != tb.GetID) break;
+                                            if (y_greedy > y && _blocks[GetAddress(x, y_greedy, z)].Marched) break;
 
                                             for (int z_greedy = z; z_greedy <= max_z; z_greedy++)
                                             {
-                                                bool PlusX;
-                                                if (x == 15) PlusX = _blocks_PlusX[y_greedy * 16 + z_greedy * 256].Solid;
-                                                else PlusX = _blocks[(x + 1) + y_greedy * 16 + z_greedy * 256].Solid;
+                                                bool PlusX, IsThisBlockMarched;
+                                                if (x == 15) {
+                                                    PlusX = _blocks_PlusX[GetAddress(0, y_greedy, z_greedy)].Solid;
+                                                    if (_blocks_PlusX[GetAddress(0, y_greedy, z_greedy)].ShowOtherBlockFaces > 0) PlusX = false;
+                                                } else {
+                                                    PlusX = _blocks[GetAddress(x + 1, y_greedy, z_greedy)].Solid;
+                                                    if (_blocks[GetAddress(x + 1, y_greedy, z_greedy)].ShowOtherBlockFaces > 0) PlusX = false;
+                                                }
 
-                                                if (!_blocks_greedy_N[x + y_greedy * 16 + z_greedy * 256] && tb.GetID == _blocks[x + y_greedy * 16 + z_greedy * 256].GetID && !PlusX)
+                                                IsThisBlockMarched = _blocks[GetAddress(x, y_greedy, z_greedy)].Marched;
+
+                                                if (!_blocks_greedy_N[GetAddress(x, y_greedy, z_greedy)] && tb.GetID == _blocks[GetAddress(x, y_greedy, z_greedy)].GetID && !PlusX && !IsThisBlockMarched)
                                                 {
                                                     if (y_greedy == y) temp_max_z = z_greedy;
-                                                    _blocks_greedy_N[x + y_greedy * 16 + z_greedy * 256] = true;
-
-                                                }
-                                                else
-                                                {
+                                                    _blocks_greedy_N[GetAddress(x, y_greedy, z_greedy)] = true;
+                                                } else {
                                                     if (z_greedy <= max_z && y_greedy > y)
                                                     {
                                                         for (int z1 = z; z1 < z_greedy; z1++)
                                                         {
-                                                            _blocks_greedy_N[x + y_greedy * 16 + z1 * 256] = false;
+                                                            _blocks_greedy_N[GetAddress(x, y_greedy, z1)] = false;
                                                         }
                                                         broken = true;
                                                     }
@@ -860,14 +916,14 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + 0.005f));
                                     }
 
                                     // YZ - South
-                                    if (tb.Solid && !tbmx.Solid && !_blocks_greedy_S[x + y * 16 + z * 256])
+                                    if (tb.Solid && (!tbmx.Solid || (tbmx.ShowOtherBlockFaces == 2 && tbmx.GetID != tb.GetID) || tb.ShowOtherBlockFaces == 1) && !_blocks_greedy_S[GetAddress(x, y, z)] && !tb.Marched)
                                     {
                                         int max_z = 15;
                                         int temp_max_z = 15;
@@ -876,27 +932,32 @@ public class Chunk : MonoBehaviour
 
                                         for (int y_greedy = y; y_greedy < chunkSize; y_greedy++)
                                         {
-                                            if (y_greedy > y && _blocks[x + y_greedy * 16 + z * 256].GetID != tb.GetID) break;
+                                            if (y_greedy > y && _blocks[GetAddress(x, y_greedy, z)].GetID != tb.GetID) break;
+                                            if (y_greedy > y && _blocks[GetAddress(x, y_greedy, z)].Marched) break;
 
                                             for (int z_greedy = z; z_greedy <= max_z; z_greedy++)
                                             {
-                                                bool MinusX;
-                                                if (x == 0) MinusX = _blocks_MinusX[15 + y_greedy * 16 + z_greedy * 256].Solid;
-                                                else MinusX = _blocks[(x - 1) + y_greedy * 16 + z_greedy * 256].Solid;
+                                                bool MinusX, IsThisBlockMarched;
+                                                if (x == 0) {
+                                                    MinusX = _blocks_MinusX[GetAddress(15, y_greedy, z_greedy)].Solid;
+                                                    if (_blocks[GetAddress(x, y_greedy, z_greedy)].ShowOtherBlockFaces > 0) MinusX = false;
+                                                } else {
+                                                    MinusX = _blocks[GetAddress(x - 1, y_greedy, z_greedy)].Solid;
+                                                    if (_blocks[GetAddress(x, y_greedy, z_greedy)].ShowOtherBlockFaces > 0) MinusX = false;
+                                                }
 
-                                                if (!_blocks_greedy_S[x + y_greedy * 16 + z_greedy * 256] && tb.GetID == _blocks[x + y_greedy * 16 + z_greedy * 256].GetID && !MinusX)
+                                                IsThisBlockMarched = _blocks[GetAddress(x, y_greedy, z_greedy)].Marched;
+
+                                                if (!_blocks_greedy_S[GetAddress(x, y_greedy, z_greedy)] && tb.GetID == _blocks[GetAddress(x, y_greedy, z_greedy)].GetID && !MinusX && !IsThisBlockMarched)
                                                 {
                                                     if (y_greedy == y) temp_max_z = z_greedy;
-                                                    _blocks_greedy_S[x + y_greedy * 16 + z_greedy * 256] = true;
-
-                                                }
-                                                else
-                                                {
+                                                    _blocks_greedy_S[GetAddress(x, y_greedy, z_greedy)] = true;
+                                                } else {
                                                     if (z_greedy <= max_z && y_greedy > y)
                                                     {
                                                         for (int z1 = z; z1 < z_greedy; z1++)
                                                         {
-                                                            _blocks_greedy_S[x + y_greedy * 16 + z1 * 256] = false;
+                                                            _blocks_greedy_S[GetAddress(x, y_greedy, z1)] = false;
                                                         }
                                                         broken = true;
                                                     }
@@ -918,18 +979,17 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + 0.005f));
                                     }
 
                                 } else {
-
                                     // Standart culled meshing
                                     // No algorithm needed.
 
-                                    if (tb.Solid && !tbpy.Solid && ((tbpy.GetID == 0) || ((tbpy.GetID > 1) && (tbpy.GetID < 11))))
+                                    if (tb.Solid && !tbpy.Solid)
                                     {
                                         vertices.Add(new Vector3(x - 0.5f, y + 0.5f, z + 0.5f));
                                         vertices.Add(new Vector3(x + 0.5f, y + 0.5f, z + 0.5f));
@@ -941,13 +1001,13 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.001f, tileSize * tb.Texture_Up.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.001f, tileSize * tb.Texture_Up.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.005f, tileSize * tb.Texture_Up.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + tileSize - 0.005f, tileSize * tb.Texture_Up.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.005f, tileSize * tb.Texture_Up.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Up.x + 0.005f, tileSize * tb.Texture_Up.y + 0.005f));
                                     }
 
-                                    if (tb.Solid && !tbmy.Solid && ((tbmy.GetID == 0) || ((tbmy.GetID > 1) && (tbmy.GetID < 11))))
+                                    if (tb.Solid && !tbmy.Solid)
                                     {
                                         vertices.Add(new Vector3(x - 0.5f, y - 0.5f, z - 0.5f));
                                         vertices.Add(new Vector3(x + 0.5f, y - 0.5f, z - 0.5f));
@@ -959,13 +1019,13 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.001f, tileSize * tb.Texture_Down.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.001f, tileSize * tb.Texture_Down.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.001f, tileSize * tb.Texture_Down.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.001f, tileSize * tb.Texture_Down.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.005f, tileSize * tb.Texture_Down.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + tileSize - 0.005f, tileSize * tb.Texture_Down.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.005f, tileSize * tb.Texture_Down.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_Down.x + 0.005f, tileSize * tb.Texture_Down.y + 0.005f));
                                     }
 
-                                    if (tb.Solid && !tbpz.Solid && ((tbpz.GetID == 0) || ((tbpz.GetID > 1) && (tbpz.GetID < 11))))
+                                    if (tb.Solid && !tbpz.Solid)
                                     {
                                         vertices.Add(new Vector3(x + 0.5f, y - 0.5f, z + 0.5f));
                                         vertices.Add(new Vector3(x + 0.5f, y + 0.5f, z + 0.5f));
@@ -977,13 +1037,13 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.001f, tileSize * tb.Texture_North.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + tileSize - 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_North.x + 0.005f, tileSize * tb.Texture_North.y + 0.005f));
                                     }
 
-                                    if (tb.Solid && !tbmz.Solid && ((tbmz.GetID == 0) || ((tbmz.GetID > 1) && (tbmz.GetID < 11))))
+                                    if (tb.Solid && !tbmz.Solid)
                                     {
                                         vertices.Add(new Vector3(x - 0.5f, y - 0.5f, z - 0.5f));
                                         vertices.Add(new Vector3(x - 0.5f, y + 0.5f, z - 0.5f));
@@ -995,13 +1055,13 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + tileSize - 0.001f, tileSize * tb.Texture_South.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + tileSize - 0.001f, tileSize * tb.Texture_South.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + 0.001f, tileSize * tb.Texture_South.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + 0.001f, tileSize * tb.Texture_South.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + tileSize - 0.005f, tileSize * tb.Texture_South.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + tileSize - 0.005f, tileSize * tb.Texture_South.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + 0.005f, tileSize * tb.Texture_South.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_South.x + 0.005f, tileSize * tb.Texture_South.y + 0.005f));
                                     }
 
-                                    if (tb.Solid && !tbpx.Solid && ((tbpx.GetID == 0) || ((tbpx.GetID > 1) && (tbpx.GetID < 11))))
+                                    if (tb.Solid && !tbpx.Solid)
                                     {
                                         vertices.Add(new Vector3(x + 0.5f, y - 0.5f, z - 0.5f));
                                         vertices.Add(new Vector3(x + 0.5f, y + 0.5f, z - 0.5f));
@@ -1013,13 +1073,13 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + tileSize - 0.001f, tileSize * tb.Texture_East.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + tileSize - 0.001f, tileSize * tb.Texture_East.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + 0.001f, tileSize * tb.Texture_East.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + 0.001f, tileSize * tb.Texture_East.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + tileSize - 0.005f, tileSize * tb.Texture_East.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + tileSize - 0.005f, tileSize * tb.Texture_East.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + 0.005f, tileSize * tb.Texture_East.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_East.x + 0.005f, tileSize * tb.Texture_East.y + 0.005f));
                                     }
 
-                                    if (tb.Solid && !tbmx.Solid && ((tbmx.GetID == 0) || ((tbmx.GetID > 1) && (tbmx.GetID < 11))))
+                                    if (tb.Solid && !tbmx.Solid)
                                     {
                                         vertices.Add(new Vector3(x - 0.5f, y - 0.5f, z + 0.5f));
                                         vertices.Add(new Vector3(x - 0.5f, y + 0.5f, z + 0.5f));
@@ -1031,62 +1091,63 @@ public class Chunk : MonoBehaviour
                                         triangles.Add(vertices.Length - 4);
                                         triangles.Add(vertices.Length - 2);
                                         triangles.Add(vertices.Length - 1);
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + tileSize - 0.001f, tileSize * tb.Texture_West.y + 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + tileSize - 0.001f, tileSize * tb.Texture_West.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + 0.001f, tileSize * tb.Texture_West.y + tileSize - 0.001f));
-                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + 0.001f, tileSize * tb.Texture_West.y + 0.001f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + tileSize - 0.005f, tileSize * tb.Texture_West.y + 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + tileSize - 0.005f, tileSize * tb.Texture_West.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + 0.005f, tileSize * tb.Texture_West.y + tileSize - 0.005f));
+                                        uvs.Add(new Vector2(tileSize * tb.Texture_West.x + 0.005f, tileSize * tb.Texture_West.y + 0.005f));
                                     }
                                 }
                             }
+                            //}
                         }
                     }
                 }
             }
             // MARCHING CUBES HERE
-            if (UseMarchingCubes)
-            {
-                int ix, iy, iz, vert, idx;
+            
+            int ix, iy, iz, vert, idx;
                 
-                // FILL THE CORNER BLOCKS
-                for (int i = 0; i < chunkSize; i++) {
-                    for (int i2 = 0; i2 < chunkSize; i2++) {
-                        if      (_blocks_MinusX[GetAddress(chunkSize - 1,             i,            i2)].GetID == 1) MarchedBlocks[GetAddress(0,         i + 1,  i2 + 1, MCS)] = 1f;
-                        if       (_blocks_PlusX[GetAddress(            0,             i,            i2)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1,   i + 1,  i2 + 1, MCS)] = 1f;
-                        if      (_blocks_MinusY[GetAddress(            i, chunkSize - 1,            i2)].GetID == 1) MarchedBlocks[GetAddress(i + 1,         0,  i2 + 1, MCS)] = 1f;
-                        if       (_blocks_PlusY[GetAddress(            i,             0,            i2)].GetID == 1) MarchedBlocks[GetAddress(i + 1,   MCS - 1,  i2 + 1, MCS)] = 1f;
-                        if      (_blocks_MinusZ[GetAddress(            i,            i2, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(i + 1,    i2 + 1,       0, MCS)] = 1f;
-                        if       (_blocks_PlusZ[GetAddress(            i,            i2,             0)].GetID == 1) MarchedBlocks[GetAddress(i + 1,    i2 + 1, MCS - 1, MCS)] = 1f;
-                    }
+            // FILL THE EDGE BLOCKS
+            for (int i = 0; i < chunkSize; i++) {
+                for (int i2 = 0; i2 < chunkSize; i2++) {
+                    if      (_blocks_MinusX[GetAddress(chunkSize - 1,             i,            i2)].Marched) { MarchedBlocks[GetAddress(0,         i + 1,  i2 + 1, MCS)] = 1f; skipmarching = false; }
+                    if       (_blocks_PlusX[GetAddress(            0,             i,            i2)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1,  i2 + 1, MCS)] = 1f; skipmarching = false; }
+                    if      (_blocks_MinusY[GetAddress(            i, chunkSize - 1,            i2)].Marched) { MarchedBlocks[GetAddress(i + 1,         0,  i2 + 1, MCS)] = 1f; skipmarching = false; }
+                    if       (_blocks_PlusY[GetAddress(            i,             0,            i2)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1,  i2 + 1, MCS)] = 1f; skipmarching = false; }
+                    if      (_blocks_MinusZ[GetAddress(            i,            i2, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,    i2 + 1,       0, MCS)] = 1f; skipmarching = false; }
+                    if       (_blocks_PlusZ[GetAddress(            i,            i2,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,    i2 + 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
                 }
-                for (int i = 0; i < chunkSize; i++) {
-                    // XZ
-                    if         (_blocks_MinusXZ[GetAddress(chunkSize - 1,             i, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(0,         i + 1,       0, MCS)] = 1f;
-                    if          (_blocks_PlusXZ[GetAddress(            0,             i,             0)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1,   i + 1, MCS - 1, MCS)] = 1f;
-                    if     (_blocks_MinusXPlusZ[GetAddress(chunkSize - 1,             i,             0)].GetID == 1) MarchedBlocks[GetAddress(0,         i + 1, MCS - 1, MCS)] = 1f;
-                    if     (_blocks_PlusXMinusZ[GetAddress(            0,             i, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1,   i + 1,       0, MCS)] = 1f;
-                    // XY
-                    if         (_blocks_MinusXY[GetAddress(chunkSize - 1, chunkSize - 1,             i)].GetID == 1) MarchedBlocks[GetAddress(0,             0,   i + 1, MCS)] = 1f;
-                    if          (_blocks_PlusXY[GetAddress(            0,             0,             i)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1, MCS - 1,   i + 1, MCS)] = 1f;
-                    if     (_blocks_MinusXPlusY[GetAddress(chunkSize - 1,             0,             i)].GetID == 1) MarchedBlocks[GetAddress(0,       MCS - 1,   i + 1, MCS)] = 1f;
-                    if     (_blocks_PlusXMinusY[GetAddress(            0, chunkSize - 1,             i)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1,       0,   i + 1, MCS)] = 1f;
-                    // YZ
-                    if         (_blocks_MinusYZ[GetAddress(            i, chunkSize - 1, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(i + 1,         0,       0, MCS)] = 1f;
-                    if          (_blocks_PlusYZ[GetAddress(            i,             0,             0)].GetID == 1) MarchedBlocks[GetAddress(i + 1,   MCS - 1, MCS - 1, MCS)] = 1f;
-                    if     (_blocks_MinusYPlusZ[GetAddress(            i, chunkSize - 1,             0)].GetID == 1) MarchedBlocks[GetAddress(i + 1,         0, MCS - 1, MCS)] = 1f;
-                    if     (_blocks_PlusYMinusZ[GetAddress(            i,             0, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(i + 1,   MCS - 1,       0, MCS)] = 1f;
-                }
-                // Corners (XYZ)
-                if        (_blocks_PlusY_PlusXZ[GetAddress(            0,             0,             0)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1, MCS - 1, MCS - 1, MCS)] = 1f;
-                if       (_blocks_MinusY_PlusXZ[GetAddress(            0, chunkSize - 1,             0)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1,       0, MCS - 1, MCS)] = 1f;
-                if      (_blocks_MinusY_MinusXZ[GetAddress(chunkSize - 1, chunkSize - 1, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(0,             0,       0, MCS)] = 1f;
-                if       (_blocks_PlusY_MinusXZ[GetAddress(chunkSize - 1,             0, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(0,       MCS - 1,       0, MCS)] = 1f;
-                if  (_blocks_PlusY_MinusX_PlusZ[GetAddress(chunkSize - 1,             0,             0)].GetID == 1) MarchedBlocks[GetAddress(0,       MCS - 1, MCS - 1, MCS)] = 1f;
-                if (_blocks_MinusY_MinusX_PlusZ[GetAddress(chunkSize - 1, chunkSize - 1,             0)].GetID == 1) MarchedBlocks[GetAddress(0,             0, MCS - 1, MCS)] = 1f;
-                if  (_blocks_PlusY_PlusX_MinusZ[GetAddress(            0,             0, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1, MCS - 1,       0, MCS)] = 1f;
-                if (_blocks_MinusY_PlusX_MinusZ[GetAddress(            0, chunkSize - 1, chunkSize - 1)].GetID == 1) MarchedBlocks[GetAddress(MCS - 1,       0,       0, MCS)] = 1f;
-                // END OF FILLING CORNER BLOCKS
-
-
+            }
+            for (int i = 0; i < chunkSize; i++) {
+                // XZ
+                if         (_blocks_MinusXZ[GetAddress(chunkSize - 1,             i, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,         i + 1,       0, MCS)] = 1f; skipmarching = false; }
+                if          (_blocks_PlusXZ[GetAddress(            0,             i,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
+                if     (_blocks_MinusXPlusZ[GetAddress(chunkSize - 1,             i,             0)].Marched) { MarchedBlocks[GetAddress(0,         i + 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
+                if     (_blocks_PlusXMinusZ[GetAddress(            0,             i, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1,       0, MCS)] = 1f; skipmarching = false; }
+                // XY
+                if         (_blocks_MinusXY[GetAddress(chunkSize - 1, chunkSize - 1,             i)].Marched) { MarchedBlocks[GetAddress(0,             0,   i + 1, MCS)] = 1f; skipmarching = false; }
+                if          (_blocks_PlusXY[GetAddress(            0,             0,             i)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1,   i + 1, MCS)] = 1f; skipmarching = false; }
+                if     (_blocks_MinusXPlusY[GetAddress(chunkSize - 1,             0,             i)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1,   i + 1, MCS)] = 1f; skipmarching = false; }
+                if     (_blocks_PlusXMinusY[GetAddress(            0, chunkSize - 1,             i)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0,   i + 1, MCS)] = 1f; skipmarching = false; }
+                // YZ
+                if         (_blocks_MinusYZ[GetAddress(            i, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,         0,       0, MCS)] = 1f; skipmarching = false; }
+                if          (_blocks_PlusYZ[GetAddress(            i,             0,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
+                if     (_blocks_MinusYPlusZ[GetAddress(            i, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,         0, MCS - 1, MCS)] = 1f; skipmarching = false; }
+                if     (_blocks_PlusYMinusZ[GetAddress(            i,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1,       0, MCS)] = 1f; skipmarching = false; }
+            }
+            // Corners (XYZ)
+            if        (_blocks_PlusY_PlusXZ[GetAddress(            0,             0,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
+            if       (_blocks_MinusY_PlusXZ[GetAddress(            0, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0, MCS - 1, MCS)] = 1f; skipmarching = false; }
+            if      (_blocks_MinusY_MinusXZ[GetAddress(chunkSize - 1, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,             0,       0, MCS)] = 1f; skipmarching = false; }
+            if       (_blocks_PlusY_MinusXZ[GetAddress(chunkSize - 1,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1,       0, MCS)] = 1f; skipmarching = false; }
+            if  (_blocks_PlusY_MinusX_PlusZ[GetAddress(chunkSize - 1,             0,             0)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
+            if (_blocks_MinusY_MinusX_PlusZ[GetAddress(chunkSize - 1, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(0,             0, MCS - 1, MCS)] = 1f; skipmarching = false; }
+            if  (_blocks_PlusY_PlusX_MinusZ[GetAddress(            0,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1,       0, MCS)] = 1f; skipmarching = false; }
+            if (_blocks_MinusY_PlusX_MinusZ[GetAddress(            0, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0,       0, MCS)] = 1f; skipmarching = false; }
+            // END OF FILLING CORNER BLOCKS
+                
+            if (!skipmarching)
+            {
                 float Surface = 0.5f;
                 NativeArray<float> Cube = new NativeArray<float>(8, Allocator.Temp);
                 NativeArray<int> WindingOrder = new NativeArray<int>(3, Allocator.Temp);
@@ -1107,29 +1168,57 @@ public class Chunk : MonoBehaviour
                     WindingOrder[2] = 0;
                 }
 
-                //TODO: Fix the weird slope on +X and -X corner (+X+Y, -X+Y)
                 for (int x = 0; x < chunkSize; x++)
                 {
                     for (int y = 0; y < chunkSize; y++)
                     {
                         for (int z = 0; z < chunkSize; z++)
                         {
+                            Vector2 UVpos = new Vector2(0f, 0f);
+                            //Debug.Log("cube found: " + _blocks[GetAddress(x, y, z)].GetID);
+
+                            if (_blocks[GetAddress(x, y, z)].GetID == 0 || !_blocks[GetAddress(x, y, z)].Marched)
+                            {
+                                for (int x1 = -1; x1 <= 1; x1++)
+                                {
+                                    for (int y1 = -1; y1 <= 1; y1++)
+                                    {
+                                        for (int z1 = -1; z1 <= 1; z1++)
+                                        {
+                                            int f_x = x, f_y = y, f_z = z;
+                                            if ((x == 0 && x1 < 0) || (x == chunkSize - 1 && x1 > 0)) f_x = x; else f_x = x + x1;
+                                            if ((y == 0 && y1 < 0) || (y == chunkSize - 1 && y1 > 0)) f_y = y; else f_y = y + y1;
+                                            if ((z == 0 && z1 < 0) || (z == chunkSize - 1 && z1 > 0)) f_z = z; else f_z = z + z1;
+                                            if (_blocks[GetAddress(f_x, f_y, f_z)].GetID != 0 && _blocks[GetAddress(f_x, f_y, f_z)].Marched)
+                                                UVpos = new Vector2(tileSize * _blocks[GetAddress(f_x, f_y, f_z)].Texture_Up.x + tileSize - 0.005f,
+                                                    tileSize * _blocks[GetAddress(f_x, f_y, f_z)].Texture_Up.y + 0.005f);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                UVpos = new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.x + tileSize - 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.y + 0.005f);
+                            }
+
+
                             //Get the values in the 8 neighbours which make up a cube
                             for (int i = 0; i < 8; i++)
                             {
-                                ix = x+1 + Table_VertexOffset[i*3 + 0];
-                                iy = y+1 + Table_VertexOffset[i*3 + 1];
-                                iz = z+1 + Table_VertexOffset[i*3 + 2];
+                                ix = x + 1 + Table_VertexOffset[i * 3 + 0];
+                                iy = y + 1 + Table_VertexOffset[i * 3 + 1];
+                                iz = z + 1 + Table_VertexOffset[i * 3 + 2];
 
                                 Cube[i] = MarchedBlocks[ix + iy * MCS + iz * MCS * MCS];
                             }
 
                             //Perform algorithm
                             NativeArray<float3> EdgeVertex = new NativeArray<float3>(12, Allocator.Temp);
+                            NativeArray<Vector2> EdgeVertexUV = new NativeArray<Vector2>(12, Allocator.Temp);
                             //Vector3[] EdgeVertex = new Vector3[12];
-                            
+
                             int flagIndex = 0;
-                            float offset = 0.0f;
+                            float offset = 0f;
 
                             //Find which vertices are inside of the surface and which are outside
                             for (int i2 = 0; i2 < 8; i2++) if (Cube[i2] <= Surface) flagIndex |= 1 << i2;
@@ -1155,12 +1244,12 @@ public class Chunk : MonoBehaviour
                                         EdgeVertex[i2] = EV;
                                     }
                                 }
-
+                                int trisfound = 0;
                                 //Save the triangles that were found. There can be up to five per cube
                                 for (int i2 = 0; i2 < 5; i2++)
                                 {
                                     if (Table_TriangleConnection[flagIndex * 16 + (3 * i2)] < 0) break;
-
+                                    trisfound += 1;
                                     idx = vertices.Length;
 
                                     for (int j = 0; j < 3; j++)
@@ -1168,14 +1257,24 @@ public class Chunk : MonoBehaviour
                                         vert = Table_TriangleConnection[flagIndex * 16 + (3 * i2 + j)];
                                         Marching_triangles.Add(idx + WindingOrder[j]);
                                         vertices.Add(EdgeVertex[vert]);
+                                        March_UVs.Add(UVpos);
+                                        //March_UVs.Add(TestTexture);
+                                        //
+
                                     }
+
+                                    //March_UVs.Add(new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.x + tileSize - 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.y + tileSize - 0.005f));
+                                    //March_UVs.Add(new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.x + 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.y + tileSize - 0.005f));
+                                    //March_UVs.Add(new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.x + 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.y + 0.005f));
                                 }
+
+
                             }
                         }
                     }
                 }
-
             }
+            MarchedBlocks.Dispose();
             // END OF MARCHING CUBES
         }
     }
@@ -1373,8 +1472,8 @@ public class Chunk : MonoBehaviour
                     }
                 }
             }*/
-
             //ChunkCoordinates
+            //Block WorkerBlock;
             for (int x = 0; x < 16; x++)
             {
                 for (int y = 0; y < 16; y++)
@@ -1382,15 +1481,17 @@ public class Chunk : MonoBehaviour
                     for (int z = 0; z < 16; z++)
                     {
                         //set blocks
-                        int test = random.NextInt(-2, 2);
-                        if (ChunkCoordinates.y + y == 25 + test)
+                        //int test = random.NextInt(-2, 2);
+
+                        if (ChunkCoordinates.y + y == 25)
                         {
-                            _blocksNew[x + y * 16 + z * 256] = blocktype[1];
+                            _blocksNew[x + y * 16 + z * 256] = blocktype[2];
                         }
-                        else if (ChunkCoordinates.y + y < 25 + test)
+                        else if (ChunkCoordinates.y + y < 25)
                         {
-                            _blocksNew[x + y * 16 + z * 256] = blocktype[1];
+                            _blocksNew[x + y * 16 + z * 256] = blocktype[3];
                         }
+                        
                     }
                 }
             }
