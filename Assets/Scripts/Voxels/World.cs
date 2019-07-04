@@ -36,6 +36,8 @@ public class World : MonoBehaviour
 
     public void Awake()
     {
+        Application.targetFrameRate = 300;
+        QualitySettings.vSyncCount = 1;
         BlockData.InitalizeBlocks();
 
         string[] PropertyNames = BlockMaterial.GetTexturePropertyNames();

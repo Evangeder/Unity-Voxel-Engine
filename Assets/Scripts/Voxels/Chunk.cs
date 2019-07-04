@@ -335,6 +335,8 @@ public class Chunk : MonoBehaviour
                 TestTexture = MarchingTexture,
                 DebugMarching = DebugMarching,
 
+                BlockTypes = BlockData.byID.Count(),
+
                 // TILING SIZE FOR TEXTURING
                 tileSize = BlockData.BlockTileSize,
 
@@ -408,7 +410,7 @@ public class Chunk : MonoBehaviour
             IsRendering = true;
             
         } else {
-            Render_JobHandle.Complete();
+            /*Render_JobHandle.Complete();
             IsRendering = false;
             if (verts.IsCreated) verts.Dispose();
             if (tris.IsCreated) tris.Dispose();
@@ -417,7 +419,8 @@ public class Chunk : MonoBehaviour
             if (March_tris.IsCreated) March_tris.Dispose();
             if (subTriangles_positions.IsCreated) subTriangles_positions.Dispose();
             if (subTriangles_values.IsCreated) subTriangles_values.Dispose();
-            if (March_UVs.IsCreated) March_UVs.Dispose();
+            if (March_UVs.IsCreated) March_UVs.Dispose();*/
+
             // Try to render until succeeded
             update = true;
         }
@@ -430,6 +433,10 @@ public class Chunk : MonoBehaviour
     private struct Job_RenderChunk : IJob
     {
         public int chunkSize;
+
+        //This is for calculating array for neighbour textures in marching cubes
+        //Value of BlockTypes is BlockData.ByID.Count()
+        public int BlockTypes;
 
         // MeshData to return
         public NativeList<Vector3> vertices;
@@ -560,7 +567,7 @@ public class Chunk : MonoBehaviour
                             } else {*/
                             if (_blocks[GetAddress(x, y, z)].Marched) {
                                 skipmarching = false;
-                                MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = 1f;
+                                MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = _blocks[GetAddress(x, y, z)].MarchedValue;
                             } else {
                                 if (x == 0) tbmx = _blocks_MinusX[GetAddress(chunkSize - 1, y, z)]; else tbmx = _blocks[GetAddress(x - 1, y, z)];
                                 if (x == chunkSize - 1) tbpx = _blocks_PlusX[GetAddress(0, y, z)]; else tbpx = _blocks[GetAddress(x + 1, y, z)];
@@ -1110,40 +1117,40 @@ public class Chunk : MonoBehaviour
             // FILL THE EDGE BLOCKS
             for (int i = 0; i < chunkSize; i++) {
                 for (int i2 = 0; i2 < chunkSize; i2++) {
-                    if      (_blocks_MinusX[GetAddress(chunkSize - 1,             i,            i2)].Marched) { MarchedBlocks[GetAddress(0,         i + 1,  i2 + 1, MCS)] = 1f; skipmarching = false; }
-                    if       (_blocks_PlusX[GetAddress(            0,             i,            i2)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1,  i2 + 1, MCS)] = 1f; skipmarching = false; }
-                    if      (_blocks_MinusY[GetAddress(            i, chunkSize - 1,            i2)].Marched) { MarchedBlocks[GetAddress(i + 1,         0,  i2 + 1, MCS)] = 1f; skipmarching = false; }
-                    if       (_blocks_PlusY[GetAddress(            i,             0,            i2)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1,  i2 + 1, MCS)] = 1f; skipmarching = false; }
-                    if      (_blocks_MinusZ[GetAddress(            i,            i2, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,    i2 + 1,       0, MCS)] = 1f; skipmarching = false; }
-                    if       (_blocks_PlusZ[GetAddress(            i,            i2,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,    i2 + 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
+                    if      (_blocks_MinusX[GetAddress(chunkSize - 1,             i,            i2)].Marched) { MarchedBlocks[GetAddress(0,         i + 1,  i2 + 1, MCS)] =              _blocks_MinusX[GetAddress(chunkSize - 1,             i,            i2)].MarchedValue; skipmarching = false; }
+                    if       (_blocks_PlusX[GetAddress(            0,             i,            i2)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1,  i2 + 1, MCS)] =               _blocks_PlusX[GetAddress(            0,             i,            i2)].MarchedValue; skipmarching = false; }
+                    if      (_blocks_MinusY[GetAddress(            i, chunkSize - 1,            i2)].Marched) { MarchedBlocks[GetAddress(i + 1,         0,  i2 + 1, MCS)] =              _blocks_MinusY[GetAddress(            i, chunkSize - 1,            i2)].MarchedValue; skipmarching = false; }
+                    if       (_blocks_PlusY[GetAddress(            i,             0,            i2)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1,  i2 + 1, MCS)] =               _blocks_PlusY[GetAddress(            i,             0,            i2)].MarchedValue; skipmarching = false; }
+                    if      (_blocks_MinusZ[GetAddress(            i,            i2, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,    i2 + 1,       0, MCS)] =              _blocks_MinusZ[GetAddress(            i,            i2, chunkSize - 1)].MarchedValue; skipmarching = false; }
+                    if       (_blocks_PlusZ[GetAddress(            i,            i2,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,    i2 + 1, MCS - 1, MCS)] =               _blocks_PlusZ[GetAddress(            i,            i2,             0)].MarchedValue; skipmarching = false; }
                 }
             }
             for (int i = 0; i < chunkSize; i++) {
                 // XZ
-                if         (_blocks_MinusXZ[GetAddress(chunkSize - 1,             i, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,         i + 1,       0, MCS)] = 1f; skipmarching = false; }
-                if          (_blocks_PlusXZ[GetAddress(            0,             i,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
-                if     (_blocks_MinusXPlusZ[GetAddress(chunkSize - 1,             i,             0)].Marched) { MarchedBlocks[GetAddress(0,         i + 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
-                if     (_blocks_PlusXMinusZ[GetAddress(            0,             i, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1,       0, MCS)] = 1f; skipmarching = false; }
+                if         (_blocks_MinusXZ[GetAddress(chunkSize - 1,             i, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,         i + 1,       0, MCS)] =             _blocks_MinusXZ[GetAddress(chunkSize - 1,             i, chunkSize - 1)].MarchedValue; skipmarching = false; }
+                if          (_blocks_PlusXZ[GetAddress(            0,             i,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1, MCS - 1, MCS)] =              _blocks_PlusXZ[GetAddress(            0,             i,             0)].MarchedValue; skipmarching = false; }
+                if     (_blocks_MinusXPlusZ[GetAddress(chunkSize - 1,             i,             0)].Marched) { MarchedBlocks[GetAddress(0,         i + 1, MCS - 1, MCS)] =         _blocks_MinusXPlusZ[GetAddress(chunkSize - 1,             i,             0)].MarchedValue; skipmarching = false; }
+                if     (_blocks_PlusXMinusZ[GetAddress(            0,             i, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1,   i + 1,       0, MCS)] =         _blocks_PlusXMinusZ[GetAddress(            0,             i, chunkSize - 1)].MarchedValue; skipmarching = false; }
                 // XY
-                if         (_blocks_MinusXY[GetAddress(chunkSize - 1, chunkSize - 1,             i)].Marched) { MarchedBlocks[GetAddress(0,             0,   i + 1, MCS)] = 1f; skipmarching = false; }
-                if          (_blocks_PlusXY[GetAddress(            0,             0,             i)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1,   i + 1, MCS)] = 1f; skipmarching = false; }
-                if     (_blocks_MinusXPlusY[GetAddress(chunkSize - 1,             0,             i)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1,   i + 1, MCS)] = 1f; skipmarching = false; }
-                if     (_blocks_PlusXMinusY[GetAddress(            0, chunkSize - 1,             i)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0,   i + 1, MCS)] = 1f; skipmarching = false; }
+                if         (_blocks_MinusXY[GetAddress(chunkSize - 1, chunkSize - 1,             i)].Marched) { MarchedBlocks[GetAddress(0,             0,   i + 1, MCS)] =             _blocks_MinusXY[GetAddress(chunkSize - 1, chunkSize - 1,             i)].MarchedValue; skipmarching = false; }
+                if          (_blocks_PlusXY[GetAddress(            0,             0,             i)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1,   i + 1, MCS)] =              _blocks_PlusXY[GetAddress(            0,             0,             i)].MarchedValue; skipmarching = false; }
+                if     (_blocks_MinusXPlusY[GetAddress(chunkSize - 1,             0,             i)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1,   i + 1, MCS)] =         _blocks_MinusXPlusY[GetAddress(chunkSize - 1,             0,             i)].MarchedValue; skipmarching = false; }
+                if     (_blocks_PlusXMinusY[GetAddress(            0, chunkSize - 1,             i)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0,   i + 1, MCS)] =         _blocks_PlusXMinusY[GetAddress(            0, chunkSize - 1,             i)].MarchedValue; skipmarching = false; }
                 // YZ
-                if         (_blocks_MinusYZ[GetAddress(            i, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,         0,       0, MCS)] = 1f; skipmarching = false; }
-                if          (_blocks_PlusYZ[GetAddress(            i,             0,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
-                if     (_blocks_MinusYPlusZ[GetAddress(            i, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,         0, MCS - 1, MCS)] = 1f; skipmarching = false; }
-                if     (_blocks_PlusYMinusZ[GetAddress(            i,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1,       0, MCS)] = 1f; skipmarching = false; }
+                if         (_blocks_MinusYZ[GetAddress(            i, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,         0,       0, MCS)] =             _blocks_MinusYZ[GetAddress(            i, chunkSize - 1, chunkSize - 1)].MarchedValue; skipmarching = false; }
+                if          (_blocks_PlusYZ[GetAddress(            i,             0,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1, MCS - 1, MCS)] =              _blocks_PlusYZ[GetAddress(            i,             0,             0)].MarchedValue; skipmarching = false; }
+                if     (_blocks_MinusYPlusZ[GetAddress(            i, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(i + 1,         0, MCS - 1, MCS)] =         _blocks_MinusYPlusZ[GetAddress(            i, chunkSize - 1,             0)].MarchedValue; skipmarching = false; }
+                if     (_blocks_PlusYMinusZ[GetAddress(            i,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(i + 1,   MCS - 1,       0, MCS)] =         _blocks_PlusYMinusZ[GetAddress(            i,             0, chunkSize - 1)].MarchedValue; skipmarching = false; }
             }
             // Corners (XYZ)
-            if        (_blocks_PlusY_PlusXZ[GetAddress(            0,             0,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
-            if       (_blocks_MinusY_PlusXZ[GetAddress(            0, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0, MCS - 1, MCS)] = 1f; skipmarching = false; }
-            if      (_blocks_MinusY_MinusXZ[GetAddress(chunkSize - 1, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,             0,       0, MCS)] = 1f; skipmarching = false; }
-            if       (_blocks_PlusY_MinusXZ[GetAddress(chunkSize - 1,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1,       0, MCS)] = 1f; skipmarching = false; }
-            if  (_blocks_PlusY_MinusX_PlusZ[GetAddress(chunkSize - 1,             0,             0)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1, MCS - 1, MCS)] = 1f; skipmarching = false; }
-            if (_blocks_MinusY_MinusX_PlusZ[GetAddress(chunkSize - 1, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(0,             0, MCS - 1, MCS)] = 1f; skipmarching = false; }
-            if  (_blocks_PlusY_PlusX_MinusZ[GetAddress(            0,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1,       0, MCS)] = 1f; skipmarching = false; }
-            if (_blocks_MinusY_PlusX_MinusZ[GetAddress(            0, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0,       0, MCS)] = 1f; skipmarching = false; }
+            if        (_blocks_PlusY_PlusXZ[GetAddress(            0,             0,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1, MCS - 1, MCS)] =        _blocks_PlusY_PlusXZ[GetAddress(            0,             0,             0)].MarchedValue; skipmarching = false; }
+            if       (_blocks_MinusY_PlusXZ[GetAddress(            0, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0, MCS - 1, MCS)] =       _blocks_MinusY_PlusXZ[GetAddress(            0, chunkSize - 1,             0)].MarchedValue; skipmarching = false; }
+            if      (_blocks_MinusY_MinusXZ[GetAddress(chunkSize - 1, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,             0,       0, MCS)] =      _blocks_MinusY_MinusXZ[GetAddress(chunkSize - 1, chunkSize - 1, chunkSize - 1)].MarchedValue; skipmarching = false; }
+            if       (_blocks_PlusY_MinusXZ[GetAddress(chunkSize - 1,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1,       0, MCS)] =       _blocks_PlusY_MinusXZ[GetAddress(chunkSize - 1,             0, chunkSize - 1)].MarchedValue; skipmarching = false; }
+            if  (_blocks_PlusY_MinusX_PlusZ[GetAddress(chunkSize - 1,             0,             0)].Marched) { MarchedBlocks[GetAddress(0,       MCS - 1, MCS - 1, MCS)] =  _blocks_PlusY_MinusX_PlusZ[GetAddress(chunkSize - 1,             0,             0)].MarchedValue; skipmarching = false; }
+            if (_blocks_MinusY_MinusX_PlusZ[GetAddress(chunkSize - 1, chunkSize - 1,             0)].Marched) { MarchedBlocks[GetAddress(0,             0, MCS - 1, MCS)] = _blocks_MinusY_MinusX_PlusZ[GetAddress(chunkSize - 1, chunkSize - 1,             0)].MarchedValue; skipmarching = false; }
+            if  (_blocks_PlusY_PlusX_MinusZ[GetAddress(            0,             0, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1, MCS - 1,       0, MCS)] =  _blocks_PlusY_PlusX_MinusZ[GetAddress(            0,             0, chunkSize - 1)].MarchedValue; skipmarching = false; }
+            if (_blocks_MinusY_PlusX_MinusZ[GetAddress(            0, chunkSize - 1, chunkSize - 1)].Marched) { MarchedBlocks[GetAddress(MCS - 1,       0,       0, MCS)] = _blocks_MinusY_PlusX_MinusZ[GetAddress(            0, chunkSize - 1, chunkSize - 1)].MarchedValue; skipmarching = false; }
             // END OF FILLING CORNER BLOCKS
                 
             if (!skipmarching)
@@ -1175,29 +1182,171 @@ public class Chunk : MonoBehaviour
                         for (int z = 0; z < chunkSize; z++)
                         {
                             Vector2 UVpos = new Vector2(0f, 0f);
-                            //Debug.Log("cube found: " + _blocks[GetAddress(x, y, z)].GetID);
 
                             if (_blocks[GetAddress(x, y, z)].GetID == 0 || !_blocks[GetAddress(x, y, z)].Marched)
                             {
-                                for (int x1 = -1; x1 <= 1; x1++)
+                                NativeList<int> block_ids = new NativeList<int>(Allocator.Temp);
+                                for (int x1 = 0; x1 <= 2; x1++)
                                 {
-                                    for (int y1 = -1; y1 <= 1; y1++)
+                                    for (int y1 = 0; y1 <= 2; y1++)
                                     {
-                                        for (int z1 = -1; z1 <= 1; z1++)
+                                        for (int z1 = 0; z1 <= 2; z1++)
                                         {
-                                            int f_x = x, f_y = y, f_z = z;
+                                            if        (x + x1 < 0               && y + y1 < 0               && z + z1 < 0) {
+                                                //corner chunk (-X -Y -Z)
+                                                if (_blocks_MinusY_MinusXZ[GetAddress(15, 15, 15)].Marched)
+                                                    block_ids.Add(_blocks_MinusY_MinusXZ[GetAddress(15, 15, 15)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 > chunkSize - 1                       && z + z1 > chunkSize - 1) {
+                                                //corner chunk (+X +Y +Z)
+                                                if (_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].Marched)
+                                                    block_ids.Add(_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 < 0                                   && z + z1 > chunkSize - 1) {
+                                                //corner chunk (+X +Y -Z)
+                                                if (_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].Marched)
+                                                    block_ids.Add(_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 > chunkSize - 1                       && z + z1 < 0) {
+                                                //corner chunk (+X -Y +Z)
+                                                if (_blocks_MinusY_PlusXZ[GetAddress(0, 15, 0)].Marched)
+                                                    block_ids.Add(_blocks_MinusY_PlusXZ[GetAddress(0, 15, 0)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 < 0                                   && z + z1 < 0) {
+                                                //corner chunk (-X +Y +Z)
+                                                if (_blocks_PlusY_MinusX_PlusZ[GetAddress(15, 0, 0)].Marched)
+                                                    block_ids.Add(_blocks_PlusY_MinusX_PlusZ[GetAddress(15, 0, 0)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 > chunkSize - 1                       && z + z1 > chunkSize - 1) {
+                                                //corner chunk (+X -Y -Z)
+                                                if (_blocks_MinusY_PlusX_MinusZ[GetAddress(0, 15, 15)].Marched)
+                                                    block_ids.Add(_blocks_MinusY_PlusX_MinusZ[GetAddress(0, 15, 15)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 < 0                                   && z + z1 > chunkSize - 1) {
+                                                //corner chunk (-X +Y -Z)
+                                                if (_blocks_PlusY_MinusXZ[GetAddress(15, 0, 15)].Marched)
+                                                    block_ids.Add(_blocks_PlusY_MinusXZ[GetAddress(15, 0, 15)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 > chunkSize - 1                       && z + z1 < 0) {
+                                                //corner chunk (-X -Y +Z)
+                                                if (_blocks_MinusY_MinusX_PlusZ[GetAddress(15, 15, 0)].Marched)
+                                                    block_ids.Add(_blocks_MinusY_MinusX_PlusZ[GetAddress(15, 15, 0)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 < 0                                   && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (-X -Y)
+                                                if (_blocks_MinusXY[GetAddress(15, 15, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_MinusXY[GetAddress(15, 15, z + z1)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 > chunkSize - 1                       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (-X +Y)
+                                                if (_blocks_MinusXPlusY[GetAddress(15, 0, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_MinusXPlusY[GetAddress(15, 0, z + z1)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 < 0                                   && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (+X -Y)
+                                                if (_blocks_PlusXMinusY[GetAddress(0, 15, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_PlusXMinusY[GetAddress(0, 15, z + z1)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 > chunkSize - 1                       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (+X +Y)
+                                                if (_blocks_PlusXY[GetAddress(0, 0, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_PlusXY[GetAddress(0, 0, z + z1)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 < 0) {
+                                                //side chunk (-X -Z)
+                                                if (_blocks_MinusXZ[GetAddress(15, y + y1, 15)].Marched)
+                                                    block_ids.Add(_blocks_MinusXZ[GetAddress(15, y + y1, 15)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 > chunkSize - 1) {
+                                                //side chunk (-X +Z)
+                                                if (_blocks_MinusXPlusZ[GetAddress(15, y + y1, 0)].Marched)
+                                                    block_ids.Add(_blocks_MinusXPlusZ[GetAddress(15, y + y1, 0)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 < 0) {
+                                                //side chunk (+X -Z)
+                                                if (_blocks_PlusXMinusZ[GetAddress(0, y + y1, 15)].Marched)
+                                                    block_ids.Add(_blocks_PlusXMinusZ[GetAddress(0, y + y1, 15)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 > chunkSize - 1) {
+                                                //side chunk (+X +Z)
+                                                if (_blocks_PlusXZ[GetAddress(0, y + y1, 0)].Marched)
+                                                    block_ids.Add(_blocks_PlusXZ[GetAddress(0, y + y1, 0)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 < 0                                   && z + z1 < 0) {
+                                                //side chunk (-Y -Z)
+                                                if (_blocks_MinusYZ[GetAddress(x + x1, 15, 15)].Marched)
+                                                    block_ids.Add(_blocks_MinusYZ[GetAddress(x + x1, 15, 15)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 < 0                                   && z + z1 > chunkSize - 1) {
+                                                //side chunk (-Y +Z)
+                                                if (_blocks_MinusYPlusZ[GetAddress(x + x1, 15, 0)].Marched)
+                                                    block_ids.Add(_blocks_MinusYPlusZ[GetAddress(x + x1, 15, 0)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 > chunkSize - 1                       && z + z1 < 0) {
+                                                //side chunk (+Y -Z)
+                                                if (_blocks_PlusYMinusZ[GetAddress(x + x1, 0, 15)].Marched)
+                                                    block_ids.Add(_blocks_PlusYMinusZ[GetAddress(x + x1, 0, 15)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 > chunkSize - 1                       && z + z1 > chunkSize - 1) {
+                                                //side chunk (+Y +Z)
+                                                if (_blocks_PlusYZ[GetAddress(x + x1, 0, 0)].Marched)
+                                                    block_ids.Add(_blocks_PlusYZ[GetAddress(x + x1, 0, 0)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 < 0) {
+                                                //side chunk (-Z)
+                                                if (_blocks_MinusZ[GetAddress(x + x1, y + y1, 15)].Marched)
+                                                    block_ids.Add(_blocks_MinusZ[GetAddress(x + x1, y + y1, 15)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 > chunkSize - 1) {
+                                                //side chunk (+Z)
+                                                if (_blocks_PlusZ[GetAddress(x + x1, y + y1, 0)].Marched)
+                                                    block_ids.Add(_blocks_PlusZ[GetAddress(x + x1, y + y1, 0)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 < 0                                   && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (-Y)
+                                                if (_blocks_MinusY[GetAddress(x + x1, 15, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_MinusY[GetAddress(x + x1, 15, z + z1)].GetID);
+                                            } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 > chunkSize - 1                       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (+Y)
+                                                if (_blocks_PlusY[GetAddress(x + x1, 0, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_PlusY[GetAddress(x + x1, 0, z + z1)].GetID);
+                                            } else if (x + x1 < 0                               && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (-X)
+                                                if (_blocks_MinusX[GetAddress(15, y + y1, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_MinusX[GetAddress(15, y + y1, z + z1)].GetID);
+                                            } else if (x + x1 > chunkSize - 1                   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
+                                                //side chunk (+X)
+                                                if (_blocks_PlusX[GetAddress(0, y + y1, z + z1)].Marched)
+                                                    block_ids.Add(_blocks_PlusX[GetAddress(0, y + y1, z + z1)].GetID);
+                                            } else {
+                                                //current worker chunk
+                                                if (_blocks[GetAddress(x + x1, y + y1, z + z1)].Marched)
+                                                    block_ids.Add(_blocks[GetAddress(x + x1, y + y1, z + z1)].GetID);
+                                            }
+
+                                            /*int f_x, f_y, f_z;
                                             if ((x == 0 && x1 < 0) || (x == chunkSize - 1 && x1 > 0)) f_x = x; else f_x = x + x1;
                                             if ((y == 0 && y1 < 0) || (y == chunkSize - 1 && y1 > 0)) f_y = y; else f_y = y + y1;
                                             if ((z == 0 && z1 < 0) || (z == chunkSize - 1 && z1 > 0)) f_z = z; else f_z = z + z1;
                                             if (_blocks[GetAddress(f_x, f_y, f_z)].GetID != 0 && _blocks[GetAddress(f_x, f_y, f_z)].Marched)
                                                 UVpos = new Vector2(tileSize * _blocks[GetAddress(f_x, f_y, f_z)].Texture_Up.x + tileSize - 0.005f,
-                                                    tileSize * _blocks[GetAddress(f_x, f_y, f_z)].Texture_Up.y + 0.005f);
-                                        }
+                                                    tileSize * _blocks[GetAddress(f_x, f_y, f_z)].Texture_Up.y + 0.005f);*/
+                                            }
                                     }
                                 }
-                            }
-                            else
-                            {
+
+                                if (block_ids.Length > 1)
+                                {
+                                    NativeArray<int> counter = new NativeArray<int>(blocktype.Length - 1, Allocator.Temp);
+                                    int largest, largest_id;
+                                    for (int i3 = 0; i3 < block_ids.Length - 1; i3++)
+                                    {
+                                        if (block_ids[i3] > 0 && block_ids[i3] < block_ids.Length)
+                                        {
+                                            // Use value from numbers as the index for Count and increment the count
+                                            counter[block_ids[i3]]++;
+                                        }
+                                    }
+
+                                    largest = counter[block_ids[0]];
+                                    largest_id = block_ids[0];
+
+                                    for (int i3 = 0; i3 < block_ids.Length - 1; i3++)
+                                    {
+                                        if (largest < counter[block_ids[i3]] && block_ids[i3] != 0)
+                                        {
+                                            largest = counter[block_ids[i3]];
+                                            largest_id = block_ids[i3];
+                                        }
+                                    }
+
+                                    UVpos = new Vector2(tileSize * blocktype[largest_id].Texture_Up.x + tileSize - 0.005f, tileSize * blocktype[largest_id].Texture_Up.y + tileSize - 0.005f);
+                                    counter.Dispose();
+                                } else if (block_ids.Length == 1) {
+                                    UVpos = new Vector2(tileSize * blocktype[block_ids[0]].Texture_Up.x + tileSize - 0.005f, tileSize * blocktype[block_ids[0]].Texture_Up.y + 0.005f);
+                                } else {
+
+                                }
+                                block_ids.Dispose();
+                            } else {
                                 UVpos = new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.x + tileSize - 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.y + 0.005f);
                             }
 
@@ -1473,7 +1622,7 @@ public class Chunk : MonoBehaviour
                 }
             }*/
             //ChunkCoordinates
-            //Block WorkerBlock;
+            Block WorkerBlock;
             for (int x = 0; x < 16; x++)
             {
                 for (int y = 0; y < 16; y++)
@@ -1482,14 +1631,18 @@ public class Chunk : MonoBehaviour
                     {
                         //set blocks
                         //int test = random.NextInt(-2, 2);
-
+                        
                         if (ChunkCoordinates.y + y == 25)
                         {
-                            _blocksNew[x + y * 16 + z * 256] = blocktype[2];
+                            WorkerBlock = blocktype[2];
+                            WorkerBlock.Marched = true; WorkerBlock.MarchedValue = 1f;
+                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
                         }
                         else if (ChunkCoordinates.y + y < 25)
                         {
-                            _blocksNew[x + y * 16 + z * 256] = blocktype[3];
+                            WorkerBlock = blocktype[3];
+                            WorkerBlock.Marched = true; WorkerBlock.MarchedValue = 1f;
+                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
                         }
                         
                     }

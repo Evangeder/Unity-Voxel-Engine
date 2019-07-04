@@ -25,6 +25,7 @@ public struct Block
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
         this.Marched = false;
+        this.MarchedValue = 1f;
         this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
@@ -41,6 +42,7 @@ public struct Block
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
         this.Marched = false;
+        this.MarchedValue = 1f;
         this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
@@ -57,6 +59,7 @@ public struct Block
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
         this.Marched = false;
+        this.MarchedValue = 1f;
         this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
@@ -73,6 +76,7 @@ public struct Block
         this.UsePhysics = false;
         this.PhysicsTime = new float();
         this.Marched = false;
+        this.MarchedValue = 1f;
         this.ShowOtherBlockFaces = 0;
     }
     
@@ -90,6 +94,8 @@ public struct Block
     public float PhysicsTime { get; }
     public bool Marched { get; set; }
     public int ShowOtherBlockFaces { get; }
+    
+    public float MarchedValue { get; set; }
 }
 
 public static class BlockData
