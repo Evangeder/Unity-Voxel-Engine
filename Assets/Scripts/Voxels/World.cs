@@ -19,7 +19,7 @@ public class World : MonoBehaviour
 
     // World size (by chunks) / Maximum 16^3 or equivalent (4,096 chunks max, 16,777,216 blocks)
     // X, Y, Z                / Any value above that is highly unstable and might crash the game.
-    int3 WorldSize = new int3(16, 8, 16);
+    int3 WorldSize = new int3(32, 8, 32);
 
     [HideInInspector] public ushort GeneratedChunks = 0;
     
@@ -37,7 +37,7 @@ public class World : MonoBehaviour
 
     public void Awake()
     {
-        Unity.Mathematics.Random rand = new Unity.Mathematics.Random((uint)DateTime.Now.Millisecond);
+        Unity.Mathematics.Random rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
         WorldSeed = new float2(rand.NextFloat2(0f, 100f));
 
         Application.targetFrameRate = 300;
@@ -47,11 +47,13 @@ public class World : MonoBehaviour
         string[] PropertyNames = BlockMaterial.GetTexturePropertyNames();
 
         BlockMaterial.SetFloat("Vector1_430CB87B", BlockData.BlockTileSize);
+        BlockMaterial.SetFloat("Vector1_7C9B6D59", BlockData.TextureSize);
         BlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
         BlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
 
         PropertyNames = MarchedBlockMaterial.GetTexturePropertyNames();
         MarchedBlockMaterial.SetFloat("Vector1_430CB87B", BlockData.BlockTileSize);
+        MarchedBlockMaterial.SetFloat("Vector1_7C9B6D59", BlockData.TextureSize);
         MarchedBlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
         MarchedBlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
 
@@ -224,6 +226,19 @@ public class World : MonoBehaviour
         {
             chunk.SetBlock(x - chunk.pos.x, y - chunk.pos.y, z - chunk.pos.z, block, UsePhysics);
             chunk.update = true;
+
+            for (int ix = -1; ix < 2; ix++)
+            {
+                for (int iy = -1; iy < 2; iy++)
+                {
+                    for (int iz = -1; iz < 2; iz++)
+                    {
+                        Chunk tempchunk = GetChunk(x + ix, y + iy, z + iz);
+                        if (tempchunk != chunk)
+                            tempchunk.update = true;
+                    }
+                }
+            }
 
             UpdateIfEqual(x - chunk.pos.x, 0, new WorldPos(x - 1, y, z));
             UpdateIfEqual(x - chunk.pos.x, Chunk.chunkSize - 1, new WorldPos(x + 1, y, z));

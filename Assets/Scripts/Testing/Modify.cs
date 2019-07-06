@@ -65,13 +65,12 @@ public class Modify : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.F))
             {
                 GameObject newBomb = Instantiate(Bomb);
-                Vector3 temppos = transform.localPosition;
-                temppos.y += 2f;
-                newBomb.transform.localPosition = temppos;
+                newBomb.transform.localPosition = transform.localPosition;
                 newBomb.transform.rotation = transform.rotation;
+                newBomb.transform.Translate(Vector3.forward * 2f);
                 newBomb.transform.localRotation = transform.localRotation;
                 //newBomb.GetComponent<Rigidbody>().AddForce(new Vector3(5f, 5f, 0f), ForceMode.Impulse);
-                newBomb.GetComponent<Rigidbody>().AddRelativeForce(transform.forward * 15f, ForceMode.Impulse);
+                newBomb.GetComponent<Rigidbody>().AddRelativeForce(transform.forward * 20f, ForceMode.Impulse);
             }
 
             RaycastHit hit;

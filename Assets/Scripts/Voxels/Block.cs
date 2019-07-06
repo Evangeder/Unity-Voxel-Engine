@@ -107,6 +107,7 @@ public static class BlockData
     public static int ChunkSize = 16;
     public static List<Block> byID = new List<Block>();
     public static float BlockTileSize = 0.25f;
+    public static float TextureSize = 1f;
     //public static string TextureFilename;
     //public static int2 TextureSize;
     public static Texture2D BlockTexture;
@@ -127,8 +128,8 @@ public static class BlockData
         if (Blocks_INI.KeyExists("TileSize"))
         {
             // Data exists, parse.
-            var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.CurrentCulture.Clone();
-            culture.NumberFormat.NumberDecimalSeparator = ".";
+            var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture;
+            //culture.NumberFormat.NumberDecimalSeparator = ".";
             BlockTileSize = float.Parse(Blocks_INI.Read("TileSize"), culture);
 
             if (File.Exists(Application.dataPath + "/Mods/" + Blocks_INI.Read("Texture_File")))
@@ -141,6 +142,12 @@ public static class BlockData
                 Debug.Log("<color=red><b>COULD NOT FIND TEXTURES FILE!</b></color>, game will continue to run without texturing.\n"
                     + "Please create or drag Blocks.png file to path: <i>" + Application.dataPath + "/Mods/</i>.");
             }
+
+            if (Blocks_INI.KeyExists("TextureSize"))
+            {
+                TextureSize = float.Parse(Blocks_INI.Read("TextureSize"), culture);
+            }
+
             int MaxBlocks = int.Parse(Blocks_INI.Read("Blocktypes"));
             for (int i = 0; i < MaxBlocks; i++)
             {
@@ -162,7 +169,6 @@ public static class BlockData
                     int2 tex_marched;
 
                     if (Blocks_INI.KeyExists("Texture_Marched", "" + i)) {
-                        Debug.Log("Found marched texture! for blockID " + i);
                         tempstr2 = Blocks_INI.Read("Texture_Marched", "" + i).Split(',');
                         tex_marched = new int2(new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1])));
                     } else {

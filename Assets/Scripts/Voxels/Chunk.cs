@@ -554,21 +554,13 @@ public class Chunk : MonoBehaviour
                 {
                     for (int z = 0; z < chunkSize; z++)
                     {
+                        if (_blocks[GetAddress(x, y, z)].Marched)
+                        {
+                            skipmarching = false;
+                            MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = _blocks[GetAddress(x, y, z)].MarchedValue;
+                        }
                         if (_blocks[GetAddress(x,y,z)].GetID != 0) {
-                            /*if (_blocks[GetAddress(x, y, z)].GetID == 8) {
-                                // WATER
-                                //MarchedBlocks_Water[GetAddress(x, y, z)] = 1f;
-                            } else if (_blocks[GetAddress(x, y, z)].GetID == 9) {
-
-                            } else if (_blocks[GetAddress(x, y, z)].GetID == 10) {
-
-                            } else if (_blocks[GetAddress(x, y, z)].GetID == 11) {
-
-                            } else {*/
-                            if (_blocks[GetAddress(x, y, z)].Marched) {
-                                skipmarching = false;
-                                MarchedBlocks[GetAddress(x + 1, y + 1, z + 1, MCS)] = _blocks[GetAddress(x, y, z)].MarchedValue;
-                            } else {
+                            if (!_blocks[GetAddress(x, y, z)].Marched) {
                                 if (x == 0) tbmx = _blocks_MinusX[GetAddress(chunkSize - 1, y, z)]; else tbmx = _blocks[GetAddress(x - 1, y, z)];
                                 if (x == chunkSize - 1) tbpx = _blocks_PlusX[GetAddress(0, y, z)]; else tbpx = _blocks[GetAddress(x + 1, y, z)];
                                 if (y == 0) tbmy = _blocks_MinusY[GetAddress(x, chunkSize - 1, z)]; else tbmy = _blocks[GetAddress(x, y - 1, z)];
@@ -1105,7 +1097,6 @@ public class Chunk : MonoBehaviour
                                     }
                                 }
                             }
-                            //}
                         }
                     }
                 }
@@ -1194,111 +1185,111 @@ public class Chunk : MonoBehaviour
                                         {
                                             if        (x + x1 < 0               && y + y1 < 0               && z + z1 < 0) {
                                                 //corner chunk (-X -Y -Z)
-                                                if (_blocks_MinusY_MinusXZ[GetAddress(15, 15, 15)].Marched)
+                                                if (_blocks_MinusY_MinusXZ[GetAddress(15, 15, 15)].Marched && _blocks_MinusY_MinusXZ[GetAddress(15, 15, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusY_MinusXZ[GetAddress(15, 15, 15)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 > chunkSize - 1                       && z + z1 > chunkSize - 1) {
                                                 //corner chunk (+X +Y +Z)
-                                                if (_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].Marched)
+                                                if (_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].Marched && _blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 < 0                                   && z + z1 > chunkSize - 1) {
                                                 //corner chunk (+X +Y -Z)
-                                                if (_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].Marched)
+                                                if (_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].Marched && _blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusY_PlusXZ[GetAddress(0, 0, 0)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 > chunkSize - 1                       && z + z1 < 0) {
                                                 //corner chunk (+X -Y +Z)
-                                                if (_blocks_MinusY_PlusXZ[GetAddress(0, 15, 0)].Marched)
+                                                if (_blocks_MinusY_PlusXZ[GetAddress(0, 15, 0)].Marched && _blocks_MinusY_PlusXZ[GetAddress(0, 15, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusY_PlusXZ[GetAddress(0, 15, 0)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 < 0                                   && z + z1 < 0) {
                                                 //corner chunk (-X +Y +Z)
-                                                if (_blocks_PlusY_MinusX_PlusZ[GetAddress(15, 0, 0)].Marched)
+                                                if (_blocks_PlusY_MinusX_PlusZ[GetAddress(15, 0, 0)].Marched && _blocks_PlusY_MinusX_PlusZ[GetAddress(15, 0, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusY_MinusX_PlusZ[GetAddress(15, 0, 0)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 > chunkSize - 1                       && z + z1 > chunkSize - 1) {
                                                 //corner chunk (+X -Y -Z)
-                                                if (_blocks_MinusY_PlusX_MinusZ[GetAddress(0, 15, 15)].Marched)
+                                                if (_blocks_MinusY_PlusX_MinusZ[GetAddress(0, 15, 15)].Marched && _blocks_MinusY_PlusX_MinusZ[GetAddress(0, 15, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusY_PlusX_MinusZ[GetAddress(0, 15, 15)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 < 0                                   && z + z1 > chunkSize - 1) {
                                                 //corner chunk (-X +Y -Z)
-                                                if (_blocks_PlusY_MinusXZ[GetAddress(15, 0, 15)].Marched)
+                                                if (_blocks_PlusY_MinusXZ[GetAddress(15, 0, 15)].Marched && _blocks_PlusY_MinusXZ[GetAddress(15, 0, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusY_MinusXZ[GetAddress(15, 0, 15)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 > chunkSize - 1                       && z + z1 < 0) {
                                                 //corner chunk (-X -Y +Z)
-                                                if (_blocks_MinusY_MinusX_PlusZ[GetAddress(15, 15, 0)].Marched)
+                                                if (_blocks_MinusY_MinusX_PlusZ[GetAddress(15, 15, 0)].Marched && _blocks_MinusY_MinusX_PlusZ[GetAddress(15, 15, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusY_MinusX_PlusZ[GetAddress(15, 15, 0)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 < 0                                   && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (-X -Y)
-                                                if (_blocks_MinusXY[GetAddress(15, 15, z + z1)].Marched)
+                                                if (_blocks_MinusXY[GetAddress(15, 15, z + z1)].Marched && _blocks_MinusXY[GetAddress(15, 15, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusXY[GetAddress(15, 15, z + z1)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 > chunkSize - 1                       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (-X +Y)
-                                                if (_blocks_MinusXPlusY[GetAddress(15, 0, z + z1)].Marched)
+                                                if (_blocks_MinusXPlusY[GetAddress(15, 0, z + z1)].Marched && _blocks_MinusXPlusY[GetAddress(15, 0, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusXPlusY[GetAddress(15, 0, z + z1)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 < 0                                   && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (+X -Y)
-                                                if (_blocks_PlusXMinusY[GetAddress(0, 15, z + z1)].Marched)
+                                                if (_blocks_PlusXMinusY[GetAddress(0, 15, z + z1)].Marched && _blocks_PlusXMinusY[GetAddress(0, 15, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusXMinusY[GetAddress(0, 15, z + z1)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 > chunkSize - 1                       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (+X +Y)
-                                                if (_blocks_PlusXY[GetAddress(0, 0, z + z1)].Marched)
+                                                if (_blocks_PlusXY[GetAddress(0, 0, z + z1)].Marched && _blocks_PlusXY[GetAddress(0, 0, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusXY[GetAddress(0, 0, z + z1)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 < 0) {
                                                 //side chunk (-X -Z)
-                                                if (_blocks_MinusXZ[GetAddress(15, y + y1, 15)].Marched)
+                                                if (_blocks_MinusXZ[GetAddress(15, y + y1, 15)].Marched && _blocks_MinusXZ[GetAddress(15, y + y1, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusXZ[GetAddress(15, y + y1, 15)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 > chunkSize - 1) {
                                                 //side chunk (-X +Z)
-                                                if (_blocks_MinusXPlusZ[GetAddress(15, y + y1, 0)].Marched)
+                                                if (_blocks_MinusXPlusZ[GetAddress(15, y + y1, 0)].Marched && _blocks_MinusXPlusZ[GetAddress(15, y + y1, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusXPlusZ[GetAddress(15, y + y1, 0)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 < 0) {
                                                 //side chunk (+X -Z)
-                                                if (_blocks_PlusXMinusZ[GetAddress(0, y + y1, 15)].Marched)
+                                                if (_blocks_PlusXMinusZ[GetAddress(0, y + y1, 15)].Marched && _blocks_PlusXMinusZ[GetAddress(0, y + y1, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusXMinusZ[GetAddress(0, y + y1, 15)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 > chunkSize - 1) {
                                                 //side chunk (+X +Z)
-                                                if (_blocks_PlusXZ[GetAddress(0, y + y1, 0)].Marched)
+                                                if (_blocks_PlusXZ[GetAddress(0, y + y1, 0)].Marched && _blocks_PlusXZ[GetAddress(0, y + y1, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusXZ[GetAddress(0, y + y1, 0)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 < 0                                   && z + z1 < 0) {
                                                 //side chunk (-Y -Z)
-                                                if (_blocks_MinusYZ[GetAddress(x + x1, 15, 15)].Marched)
+                                                if (_blocks_MinusYZ[GetAddress(x + x1, 15, 15)].Marched && _blocks_MinusYZ[GetAddress(x + x1, 15, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusYZ[GetAddress(x + x1, 15, 15)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 < 0                                   && z + z1 > chunkSize - 1) {
                                                 //side chunk (-Y +Z)
-                                                if (_blocks_MinusYPlusZ[GetAddress(x + x1, 15, 0)].Marched)
+                                                if (_blocks_MinusYPlusZ[GetAddress(x + x1, 15, 0)].Marched && _blocks_MinusYPlusZ[GetAddress(x + x1, 15, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusYPlusZ[GetAddress(x + x1, 15, 0)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 > chunkSize - 1                       && z + z1 < 0) {
                                                 //side chunk (+Y -Z)
-                                                if (_blocks_PlusYMinusZ[GetAddress(x + x1, 0, 15)].Marched)
+                                                if (_blocks_PlusYMinusZ[GetAddress(x + x1, 0, 15)].Marched && _blocks_PlusYMinusZ[GetAddress(x + x1, 0, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusYMinusZ[GetAddress(x + x1, 0, 15)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 > chunkSize - 1                       && z + z1 > chunkSize - 1) {
                                                 //side chunk (+Y +Z)
-                                                if (_blocks_PlusYZ[GetAddress(x + x1, 0, 0)].Marched)
+                                                if (_blocks_PlusYZ[GetAddress(x + x1, 0, 0)].Marched && _blocks_PlusYZ[GetAddress(x + x1, 0, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusYZ[GetAddress(x + x1, 0, 0)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 < 0) {
                                                 //side chunk (-Z)
-                                                if (_blocks_MinusZ[GetAddress(x + x1, y + y1, 15)].Marched)
+                                                if (_blocks_MinusZ[GetAddress(x + x1, y + y1, 15)].Marched && _blocks_MinusZ[GetAddress(x + x1, y + y1, 15)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusZ[GetAddress(x + x1, y + y1, 15)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 > chunkSize - 1) {
                                                 //side chunk (+Z)
-                                                if (_blocks_PlusZ[GetAddress(x + x1, y + y1, 0)].Marched)
+                                                if (_blocks_PlusZ[GetAddress(x + x1, y + y1, 0)].Marched && _blocks_PlusZ[GetAddress(x + x1, y + y1, 0)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusZ[GetAddress(x + x1, y + y1, 0)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 < 0                                   && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (-Y)
-                                                if (_blocks_MinusY[GetAddress(x + x1, 15, z + z1)].Marched)
+                                                if (_blocks_MinusY[GetAddress(x + x1, 15, z + z1)].Marched && _blocks_MinusY[GetAddress(x + x1, 15, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusY[GetAddress(x + x1, 15, z + z1)].GetID);
                                             } else if (x + x1 >= 0 && x + x1 <= chunkSize - 1   && y + y1 > chunkSize - 1                       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (+Y)
-                                                if (_blocks_PlusY[GetAddress(x + x1, 0, z + z1)].Marched)
+                                                if (_blocks_PlusY[GetAddress(x + x1, 0, z + z1)].Marched && _blocks_PlusY[GetAddress(x + x1, 0, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusY[GetAddress(x + x1, 0, z + z1)].GetID);
                                             } else if (x + x1 < 0                               && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (-X)
-                                                if (_blocks_MinusX[GetAddress(15, y + y1, z + z1)].Marched)
+                                                if (_blocks_MinusX[GetAddress(15, y + y1, z + z1)].Marched && _blocks_MinusX[GetAddress(15, y + y1, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_MinusX[GetAddress(15, y + y1, z + z1)].GetID);
                                             } else if (x + x1 > chunkSize - 1                   && y + y1 >= 0 && y + y1 <= chunkSize - 1       && z + z1 >= 0 && z + z1 <= chunkSize - 1) {
                                                 //side chunk (+X)
-                                                if (_blocks_PlusX[GetAddress(0, y + y1, z + z1)].Marched)
+                                                if (_blocks_PlusX[GetAddress(0, y + y1, z + z1)].Marched && _blocks_PlusX[GetAddress(0, y + y1, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks_PlusX[GetAddress(0, y + y1, z + z1)].GetID);
                                             } else {
                                                 //current worker chunk
-                                                if (_blocks[GetAddress(x + x1, y + y1, z + z1)].Marched)
+                                                if (_blocks[GetAddress(x + x1, y + y1, z + z1)].Marched && _blocks[GetAddress(x + x1, y + y1, z + z1)].GetID != 0)
                                                     block_ids.Add(_blocks[GetAddress(x + x1, y + y1, z + z1)].GetID);
                                             }
 
@@ -1319,7 +1310,7 @@ public class Chunk : MonoBehaviour
                                     int largest, largest_id;
                                     for (int i3 = 0; i3 < block_ids.Length - 1; i3++)
                                     {
-                                        if (block_ids[i3] > 0 && block_ids[i3] < block_ids.Length)
+                                        if (block_ids[i3] != 0 && block_ids[i3] < block_ids.Length)
                                         {
                                             // Use value from numbers as the index for Count and increment the count
                                             counter[block_ids[i3]]++;
@@ -1625,48 +1616,246 @@ public class Chunk : MonoBehaviour
             }*/
             //ChunkCoordinates
             Block WorkerBlock;
+            float scale = 5f;
+            float scale2 = 1f;
+            int power = 2;
+            int power2 = 2;
+
+            float scale3 = 4f;
+            float scale4 = 8f;
+            int power3 = 1;
+            int power4 = 1;
+
+            float extrudeBottom = 0.05f;
+            float extrudeBottom2 = 1f;
+
             for (int x = 0; x < 16; x++)
             {
                 for (int z = 0; z < 16; z++)
                 {
-                    //float noisemaster = noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2)) / 500, (ChunkCoordinates.z + math.pow(seed.y, 2) + z) / 500)) * 25;
-                    //float SurfaceNoise = noise.cnoise(new float2(noisemaster, noisemaster));
-                    float SurfaceNoise = noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2)) / 100, (ChunkCoordinates.z + math.pow(seed.y, 2) + z) / 100)) * 25;
-                    SurfaceNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) + 250) / 200, (ChunkCoordinates.z + math.pow(seed.y, 2) + z+250) / 200)) * 5;
-                    SurfaceNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) + 1000) / 200, (ChunkCoordinates.z + math.pow(seed.y, 2) + z+ 1000) / 200)) * 10;
-                    SurfaceNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) - 50) / 100, (ChunkCoordinates.z + math.pow(seed.y, 2) + z -50) / 100)) * 10;
-                    SurfaceNoise -= noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) - 10) / 25, (ChunkCoordinates.z + math.pow(seed.y, 2) + z-10) / 25)) * 5;
+                    float SurfaceNoise = noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power)) * scale2) / 1000, ((ChunkCoordinates.z + z + math.pow(seed.y, power)) / 1000)) * scale2) * 10;
+                    SurfaceNoise += noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power) + 250) * scale) / 200, ((ChunkCoordinates.z + z + math.pow(seed.y, power) + 250) / 200) * scale)) * 5;
+                    SurfaceNoise += noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power) + 1000) * scale) / 200, ((ChunkCoordinates.z + z + math.pow(seed.y, power) + 1000) * scale) / 200)) * 10;
+                    SurfaceNoise -= noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power) - 50) * scale2) / 100, ((ChunkCoordinates.z + z + math.pow(seed.y, power) - 50) / 100) * scale2)) * 5;
+                    SurfaceNoise -= noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power2) - 10) * scale2) / 25, ((ChunkCoordinates.z + z + math.pow(seed.y, power2) - 10) / 25) * scale2)) * 5;
 
-                    float BottomNoise = noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) + 25) / 10, (ChunkCoordinates.z + math.pow(seed.y, 2) + z+25) / 10)) * 10;
-                    BottomNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) - 200) / 10, (ChunkCoordinates.z + math.pow(seed.y, 2) + z - 200) / 10)) * 2;
+                    float SurfaceNoise2 = noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power) + 250) * scale) / 200, ((ChunkCoordinates.z + z + math.pow(seed.x, power) + 250) / 200) * scale)) * 5;
+                    SurfaceNoise2 -= noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power) + 1000) * scale) / 200, ((ChunkCoordinates.z + z + math.pow(seed.x, power) + 1000) * scale) / 200)) * 10;
+                    SurfaceNoise2 += noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power) - 50) * scale2) / 100, ((ChunkCoordinates.z + z + math.pow(seed.x, power) - 50) / 100) * scale2)) * 5;
+                    SurfaceNoise2 += noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power2) - 10) * scale2) / 25, ((ChunkCoordinates.z + z + math.pow(seed.x, power2) - 10) / 25) * scale2)) * 5;
 
+                    float botnoise_inception = (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power3) - 512) * scale3) / 500, ((ChunkCoordinates.z + z + math.pow(seed.y, power3) + 250) * scale3) / 500)) * 1.33f);
+                    float botnoise_inception2 = (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 250) * scale3) / 500, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 512) * scale3) / 500)) * 2.5f);
+                    
+                    float BottomNoise = math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) - 200) * scale4) / 10, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 200) / 10) * scale4)) * 2) * extrudeBottom2;
+                    BottomNoise += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power3) + 512) * scale2) / 25, ((ChunkCoordinates.z + z + math.pow(seed.y, power3) + 512) / 25) * scale2)) * 2) * extrudeBottom;
+                    BottomNoise += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power3) + 10) * scale3) / 100, ((ChunkCoordinates.z + z + math.pow(seed.y, power3) + 10) / 100) * scale3)) * 7) * extrudeBottom2;
+                    BottomNoise -= (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power3) + 10) * scale3) / 1000, ((ChunkCoordinates.z + z + math.pow(seed.y, power3) + 10) / 1000) * scale3)) * 25) * extrudeBottom;
+                    BottomNoise += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power3) + 100) * scale3) / 200, ((ChunkCoordinates.z + z + math.pow(seed.y, power3) + 100) / 200) * scale3)) * 15) * extrudeBottom2;
+                    BottomNoise *= (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power3) + 100) * scale3) / 200, ((ChunkCoordinates.z + z + math.pow(seed.y, power3) + 100) / 200) * scale3)) * 5) * extrudeBottom2;
+                    BottomNoise += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception2))) * 10);
+                    BottomNoise -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception))) * 10);
+                    BottomNoise -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception2))) * 10);
+
+                    float BottomNoise_2 = (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power4) - 200) * scale4) / 10, ((ChunkCoordinates.z + z + math.pow(seed.x, power4) - 200) / 10) * scale4)) * 2) * extrudeBottom2;
+                    BottomNoise_2 -= math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power3) + 512) * scale2) / 25, ((ChunkCoordinates.z + z + math.pow(seed.x, power3) + 512) / 25) * scale2)) * 2) * extrudeBottom;
+                    BottomNoise_2 -= math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power3) + 10) * scale3) / 100, ((ChunkCoordinates.z + z + math.pow(seed.x, power3) + 10) / 100) * scale3)) * 7) * extrudeBottom2;
+                    BottomNoise_2 += (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power3) + 10) * scale3) / 1000, ((ChunkCoordinates.z + z + math.pow(seed.x, power3) + 10) / 1000) * scale3)) * 25) * extrudeBottom;
+                    BottomNoise_2 -= math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power3) + 100) * scale3) / 200, ((ChunkCoordinates.z + z + math.pow(seed.x, power3) + 100) / 200) * scale3)) * 15) * extrudeBottom2;
+                    BottomNoise_2 *= (noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power3) + 100) * scale3) / 200, ((ChunkCoordinates.z + z + math.pow(seed.x, power3) + 100) / 200) * scale3)));
+                    BottomNoise_2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise_2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception2))) * 10);
+                    BottomNoise_2 += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception))) * 10);
+                    BottomNoise_2 += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise_2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception2))) * 10);
+
+                    float BottomNoise2_2 = math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power4) - 200) * scale4) / 10, ((ChunkCoordinates.z + z + math.pow(seed.x, power4) - 200) / 10) * scale4)) * 2) * extrudeBottom2;
+                    BottomNoise2_2 -= math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power4) + 200) * scale4) / 25, ((ChunkCoordinates.z + z + math.pow(seed.x, power4) + 200) / 25) * scale4)) * 4) * extrudeBottom2;
+                    BottomNoise2_2 -= math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.y, power4) + 15) * 15) / 1000, ((ChunkCoordinates.z + z + math.pow(seed.x, power4) + 15) / 1000) * 15)) * 15) * 4;
+                    BottomNoise2_2 += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise2_2 += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception2))) * 10);
+                    BottomNoise2_2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception))) * 10);
+                    BottomNoise2_2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise2_2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception2))) * 10);
+
+                    float BottomNoise2 = math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) - 200) * scale4) / 10, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 200) / 10) * scale4)) * 2) * extrudeBottom2;
+                    BottomNoise2 += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 200) * scale4) / 25, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) + 200) / 25) * scale4)) * 4) * extrudeBottom2;
+                    BottomNoise2 += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 15) * scale4) / 100, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) + 15) / 100) * scale4)) * 7) * extrudeBottom2;
+                    BottomNoise2 += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise2 += math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception2))) * 10);
+                    BottomNoise2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception))) * 10);
+                    BottomNoise2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception), math.abs(botnoise_inception))) * 10);
+                    BottomNoise2 -= math.abs(noise.cnoise(new float2(math.abs(botnoise_inception2), math.abs(botnoise_inception2))) * 10);
+
+                    float StoneLayer = math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 1) * scale4) / 10, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 2) / 10) * scale4)) * 2) * extrudeBottom2;
+                    StoneLayer += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 128) * scale4) / 25, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 256) / 25) * scale4)) * 6) * extrudeBottom2;
+                    StoneLayer += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) - 512) * 5) / 500, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) + 1024) / 500) * 5)) * 7) * extrudeBottom2;
+                    StoneLayer += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) - 512) * scale4) / 2, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) + 1024) / 2) * scale4)) * 7) * extrudeBottom2;
+                    StoneLayer += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) - 512) * 2) / 2, ((ChunkCoordinates.z + z + math.pow(seed.y, 2) + 1024) / 2) * scale4)) * 7) * extrudeBottom2;
+
+                    float TreeGen = noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 64) * 15) / 250, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 64) / 250) * 15)) * 25;
+                    TreeGen += math.abs(noise.cnoise(new float2(((ChunkCoordinates.x + x + math.pow(seed.x, power4) + 64) * 2f) / 5, ((ChunkCoordinates.z + z + math.pow(seed.y, power4) - 64) / 5) * 2f)));
+
+                    int diff = 35;
+
+                    StoneLayer -= ChunkCoordinates.y;
+                    StoneLayer += 35 + diff;
                     SurfaceNoise -= ChunkCoordinates.y;
-                    SurfaceNoise += 16;
+                    SurfaceNoise += 50 + diff;
                     BottomNoise -= ChunkCoordinates.y;
-                    BottomNoise += 16;
+                    BottomNoise += 52 + diff;
+                    BottomNoise2 -= ChunkCoordinates.y;
+                    BottomNoise2 += 52 + diff;
+
+                    SurfaceNoise2 -= ChunkCoordinates.y;
+                    SurfaceNoise2 += 50;
+                    BottomNoise_2 -= ChunkCoordinates.y;
+                    BottomNoise_2 += 52;
+                    BottomNoise2_2 -= ChunkCoordinates.y;
+                    BottomNoise2_2 += 52;
 
                     int Surface_int = (int)math.floor(SurfaceNoise);
                     int Bottom_int = (int)math.floor(BottomNoise);
+                    int Bottom2_int = (int)math.floor(BottomNoise2);
+
+                    int Surface_2_int = (int)math.floor(SurfaceNoise2);
+                    int Bottom_2_int = (int)math.floor(BottomNoise_2);
+                    int Bottom2_2_int = (int)math.floor(BottomNoise2_2);
+
+                    if (Bottom_int < Bottom2_int + 1) Bottom2_int = Bottom_int;
 
                     for (int y = 0; y < 16; y++)
                     {
-                        if (SurfaceNoise > BottomNoise)
+                        if (_blocksNew[x + y * 16 + z * 256].GetID == 0)
                         {
-                            if (y > Bottom_int)
+                            if (SurfaceNoise2 * 2 > BottomNoise_2)
                             {
-                                if (y == Surface_int || y == Surface_int - 1)
+                                if (y > Bottom_2_int && Bottom_2_int <= Bottom2_2_int)
                                 {
-                                    WorkerBlock = blocktype[2];
-                                    WorkerBlock.Marched = true;
-                                    WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int)/2 + 0.5f;
-                                    _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                    if (y == Surface_2_int || y == Surface_2_int - 1)
+                                    {
+                                        if (TreeGen >= 3f && y == Surface_2_int && random.NextInt(0, 100) > 95)
+                                        {
+                                            for (int iy = 0; iy < random.NextInt(3, 6); iy++)
+                                            {
+                                                if (y + iy < 15)
+                                                {
+                                                    WorkerBlock = blocktype[12];
+                                                    WorkerBlock.Marched = true;
+                                                    WorkerBlock.MarchedValue = random.NextFloat(0.7f, 1f);
+                                                    _blocksNew[x + (y + iy) * 16 + z * 256] = WorkerBlock;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            WorkerBlock = blocktype[2];
+                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.MarchedValue = (SurfaceNoise2 - Surface_2_int) / 2 + 0.5f;
+                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                        }
+
+                                    }
+                                    else if (y < Surface_2_int)
+                                    {
+                                        if (y > StoneLayer - diff)
+                                        {
+                                            WorkerBlock = blocktype[3];
+                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.MarchedValue = (SurfaceNoise2 - Surface_2_int) / 2 + 0.5f;
+                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                        }
+                                        else
+                                        {
+                                            WorkerBlock = blocktype[1];
+                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.MarchedValue = (SurfaceNoise2 - Surface_2_int) / 2 + 0.5f;
+                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                        }
+                                    }
+                                    else if (y == Surface_2_int + 1)
+                                    {
+                                        float newmarchval = (SurfaceNoise2 - math.floor(SurfaceNoise2)) / 2;
+                                        if (newmarchval > 1f) newmarchval = 1f;
+                                        else if (newmarchval < 0f) newmarchval = 0f;
+
+                                        if (newmarchval < 0.501f)
+                                            WorkerBlock = blocktype[0];
+                                        else
+                                            WorkerBlock = blocktype[2];
+
+                                        WorkerBlock.Marched = true;
+                                        WorkerBlock.MarchedValue = newmarchval;
+
+                                        _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                    }
                                 }
-                                else if (y < Surface_int)
+                            }
+
+
+                            if (SurfaceNoise > BottomNoise)
+                            {
+                                if (y > Bottom_int && Bottom_int <= Bottom2_int)
                                 {
-                                    WorkerBlock = blocktype[3];
-                                    WorkerBlock.Marched = true;
-                                    WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int) / 2 + 0.5f;
-                                    _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                    if (y == Surface_int || y == Surface_int - 1)
+                                    {
+                                        if (TreeGen >= 3f && y == Surface_int && random.NextInt(0, 100) > 95)
+                                        {
+                                            for (int iy = 0; iy < random.NextInt(3, 6); iy++)
+                                            {
+                                                if (y + iy < 15)
+                                                {
+                                                    WorkerBlock = blocktype[12];
+                                                    WorkerBlock.Marched = true;
+                                                    WorkerBlock.MarchedValue = random.NextFloat(0.7f, 1f);
+                                                    _blocksNew[x + (y + iy) * 16 + z * 256] = WorkerBlock;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            WorkerBlock = blocktype[2];
+                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int) / 2 + 0.5f;
+                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                        }
+
+                                    }
+                                    else if (y < Surface_int)
+                                    {
+                                        if (y > StoneLayer)
+                                        {
+                                            WorkerBlock = blocktype[3];
+                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int) / 2 + 0.5f;
+                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                        }
+                                        else
+                                        {
+                                            WorkerBlock = blocktype[1];
+                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int) / 2 + 0.5f;
+                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                        }
+                                    }
+                                    else if (y == Surface_int + 1)
+                                    {
+                                        float newmarchval = (SurfaceNoise - math.floor(SurfaceNoise)) / 2;
+                                        if (newmarchval > 1f) newmarchval = 1f;
+                                        else if (newmarchval < 0f) newmarchval = 0f;
+
+                                        if (newmarchval < 0.501f)
+                                            WorkerBlock = blocktype[0];
+                                        else
+                                            WorkerBlock = blocktype[2];
+
+                                        WorkerBlock.Marched = true;
+                                        WorkerBlock.MarchedValue = newmarchval;
+
+                                        _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                    }
                                 }
                             }
                         }
