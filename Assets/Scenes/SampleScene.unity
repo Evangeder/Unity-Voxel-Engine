@@ -329,7 +329,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &219002970
 RectTransform:
   m_ObjectHideFlags: 0
@@ -572,7 +572,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 177638, guid: 0abab5bb77339e4428787a870eb31bd3, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 22451668, guid: 0abab5bb77339e4428787a870eb31bd3, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1169,6 +1169,9 @@ MonoBehaviour:
   MarchedBlockMaterial: {fileID: 2100000, guid: 1e9d1a4f8da54064aa26849aa1a6ab94,
     type: 2}
   SelectedMaterial: {fileID: 2100000, guid: 8bd2158b7f4f4ef47af142eb71c29b77, type: 2}
+  WorldSeed:
+    x: 0
+    y: 0
 --- !u!4 &601835515
 Transform:
   m_ObjectHideFlags: 0
@@ -1614,7 +1617,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1281337316
 Transform:
   m_ObjectHideFlags: 0
@@ -2185,6 +2188,7 @@ MonoBehaviour:
   world: {fileID: 601835514}
   BuildModeInfo: {fileID: 2042270541}
   SelectionVisualisationGO: {fileID: 1330259464}
+  Bomb: {fileID: 5620357620161876422, guid: 49503eb8b59d9c044aa4dc48e2ac8942, type: 3}
 --- !u!54 &1687258588
 Rigidbody:
   m_ObjectHideFlags: 0

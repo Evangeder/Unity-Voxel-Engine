@@ -1338,16 +1338,16 @@ public class Chunk : MonoBehaviour
                                         }
                                     }
 
-                                    UVpos = new Vector2(tileSize * blocktype[largest_id].Texture_Up.x + tileSize - 0.005f, tileSize * blocktype[largest_id].Texture_Up.y + tileSize - 0.005f);
+                                    UVpos = new Vector2(tileSize * blocktype[largest_id].Texture_Marched.x + tileSize - 0.005f, tileSize * blocktype[largest_id].Texture_Marched.y + tileSize - 0.005f);
                                     counter.Dispose();
                                 } else if (block_ids.Length == 1) {
-                                    UVpos = new Vector2(tileSize * blocktype[block_ids[0]].Texture_Up.x + tileSize - 0.005f, tileSize * blocktype[block_ids[0]].Texture_Up.y + 0.005f);
+                                    UVpos = new Vector2(tileSize * blocktype[block_ids[0]].Texture_Marched.x + tileSize - 0.005f, tileSize * blocktype[block_ids[0]].Texture_Marched.y + 0.005f);
                                 } else {
 
                                 }
                                 block_ids.Dispose();
                             } else {
-                                UVpos = new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.x + tileSize - 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Up.y + 0.005f);
+                                UVpos = new Vector2(tileSize * _blocks[GetAddress(x, y, z)].Texture_Marched.x + tileSize - 0.005f, tileSize * _blocks[GetAddress(x, y, z)].Texture_Marched.y + 0.005f);
                             }
 
 
@@ -1458,7 +1458,8 @@ public class Chunk : MonoBehaviour
                 Height_Water = Height_Water_,
                 Height_Dirt = Height_Dirt_,
                 Height_Mountain = Height_Mountain_,
-                blocktype = blocktypes // BlockData values
+                blocktype = blocktypes, // BlockData values
+                seed = world.WorldSeed
             };
 
             MapGen_JobHandle = job.Schedule();
@@ -1491,6 +1492,7 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion][ReadOnly] public float Height_Mountain;
 
         [ReadOnly] public NativeArray<Block> blocktype;
+        [ReadOnly] public float2 seed;
 
         public NativeArray<Block> _blocksNew;
         
@@ -1625,27 +1627,73 @@ public class Chunk : MonoBehaviour
             Block WorkerBlock;
             for (int x = 0; x < 16; x++)
             {
-                for (int y = 0; y < 16; y++)
+                for (int z = 0; z < 16; z++)
                 {
-                    for (int z = 0; z < 16; z++)
+                    //float noisemaster = noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2)) / 500, (ChunkCoordinates.z + math.pow(seed.y, 2) + z) / 500)) * 25;
+                    //float SurfaceNoise = noise.cnoise(new float2(noisemaster, noisemaster));
+                    float SurfaceNoise = noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2)) / 100, (ChunkCoordinates.z + math.pow(seed.y, 2) + z) / 100)) * 25;
+                    SurfaceNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) + 250) / 200, (ChunkCoordinates.z + math.pow(seed.y, 2) + z+250) / 200)) * 5;
+                    SurfaceNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) + 1000) / 200, (ChunkCoordinates.z + math.pow(seed.y, 2) + z+ 1000) / 200)) * 10;
+                    SurfaceNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) - 50) / 100, (ChunkCoordinates.z + math.pow(seed.y, 2) + z -50) / 100)) * 10;
+                    SurfaceNoise -= noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) - 10) / 25, (ChunkCoordinates.z + math.pow(seed.y, 2) + z-10) / 25)) * 5;
+
+                    float BottomNoise = noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) + 25) / 10, (ChunkCoordinates.z + math.pow(seed.y, 2) + z+25) / 10)) * 10;
+                    BottomNoise += noise.cnoise(new float2((ChunkCoordinates.x + x + math.pow(seed.x, 2) - 200) / 10, (ChunkCoordinates.z + math.pow(seed.y, 2) + z - 200) / 10)) * 2;
+
+                    SurfaceNoise -= ChunkCoordinates.y;
+                    SurfaceNoise += 16;
+                    BottomNoise -= ChunkCoordinates.y;
+                    BottomNoise += 16;
+
+                    int Surface_int = (int)math.floor(SurfaceNoise);
+                    int Bottom_int = (int)math.floor(BottomNoise);
+
+                    for (int y = 0; y < 16; y++)
+                    {
+                        if (SurfaceNoise > BottomNoise)
+                        {
+                            if (y > Bottom_int)
+                            {
+                                if (y == Surface_int || y == Surface_int - 1)
+                                {
+                                    WorkerBlock = blocktype[2];
+                                    WorkerBlock.Marched = true;
+                                    WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int)/2 + 0.5f;
+                                    _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                }
+                                else if (y < Surface_int)
+                                {
+                                    WorkerBlock = blocktype[3];
+                                    WorkerBlock.Marched = true;
+                                    WorkerBlock.MarchedValue = (SurfaceNoise - Surface_int) / 2 + 0.5f;
+                                    _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                }
+                            }
+                        }
+                    }
+
+                    //WorkerBlock.Marched = true; WorkerBlock.MarchedValue = RandomMarchedValue;
+
+                    /*for (int y = 0; y < 16; y++)
                     {
                         //set blocks
-                        //int test = random.NextInt(-2, 2);
+                        float RandomMarchedValue = random.NextFloat(0.501f, 1f);
                         
-                        if (ChunkCoordinates.y + y == 25)
+
+                        if (ChunkCoordinates.y + y == 25 && noised > 0f)
                         {
                             WorkerBlock = blocktype[2];
-                            WorkerBlock.Marched = true; WorkerBlock.MarchedValue = 1f;
+                            WorkerBlock.Marched = true; WorkerBlock.MarchedValue = RandomMarchedValue;
                             _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
                         }
-                        else if (ChunkCoordinates.y + y < 25)
+                        else if (ChunkCoordinates.y + y < 25 && noised > 0f)
                         {
                             WorkerBlock = blocktype[3];
                             WorkerBlock.Marched = true; WorkerBlock.MarchedValue = 1f;
                             _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
                         }
                         
-                    }
+                    }*/
                 }
             }
         }

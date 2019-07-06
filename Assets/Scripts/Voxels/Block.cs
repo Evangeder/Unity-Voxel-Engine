@@ -22,6 +22,7 @@ public struct Block
         this.Texture_South = texture;
         this.Texture_East = texture;
         this.Texture_West = texture;
+        this.Texture_Marched = texture;
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
         this.Marched = false;
@@ -29,7 +30,7 @@ public struct Block
         this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
-    public Block(int ID, bool solid, int2[] textures, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
+    public Block(int ID, bool solid, int2[] textures, int2 marched_texture, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -39,6 +40,7 @@ public struct Block
         this.Texture_South = textures[3];
         this.Texture_East = textures[4];
         this.Texture_West = textures[5];
+        this.Texture_Marched = marched_texture;
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
         this.Marched = false;
@@ -46,7 +48,7 @@ public struct Block
         this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
     }
 
-    public Block(int ID, bool solid, List<int2> textures, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
+    public Block(int ID, bool solid, List<int2> textures, int2 marched_texture, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -56,6 +58,7 @@ public struct Block
         this.Texture_South = textures[3];
         this.Texture_East = textures[4];
         this.Texture_West = textures[5];
+        this.Texture_Marched = marched_texture;
         this.UsePhysics = usephysics;
         this.PhysicsTime = physicstime;
         this.Marched = false;
@@ -73,6 +76,7 @@ public struct Block
         this.Texture_South = new int2();
         this.Texture_East = new int2();
         this.Texture_West = new int2();
+        this.Texture_Marched = new int2();
         this.UsePhysics = false;
         this.PhysicsTime = new float();
         this.Marched = false;
@@ -90,11 +94,11 @@ public struct Block
     public int2 Texture_South { get; }
     public int2 Texture_East { get; }
     public int2 Texture_West { get; }
+    public int2 Texture_Marched { get; }
     public bool UsePhysics { get; }
     public float PhysicsTime { get; }
     public bool Marched { get; set; }
     public int ShowOtherBlockFaces { get; }
-    
     public float MarchedValue { get; set; }
 }
 
@@ -155,9 +159,18 @@ public static class BlockData
                     tex[4] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
                     tempstr2 = Blocks_INI.Read("Texture_West", "" + i).Split(',');
                     tex[5] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
-                    
+                    int2 tex_marched;
+
+                    if (Blocks_INI.KeyExists("Texture_Marched", "" + i)) {
+                        Debug.Log("Found marched texture! for blockID " + i);
+                        tempstr2 = Blocks_INI.Read("Texture_Marched", "" + i).Split(',');
+                        tex_marched = new int2(new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1])));
+                    } else {
+                        tex_marched = tex[0];
+                    }
+
                     byID.Add(new Block(i, bool.Parse(Blocks_INI.Read("Solid", "" + i)),
-                        tex,
+                        tex, tex_marched,
                         bool.Parse(Blocks_INI.Read("Uses_Physics", "" + i)),
                         int.Parse(Blocks_INI.Read("Physics_Time", "" + i)),
                         int.Parse(Blocks_INI.Read("Show_Other_Block_Faces", "" + i))));
@@ -190,7 +203,7 @@ public static class BlockData
 
             byID.Add(new Block(0));                                   //       AIR
             byID.Add(new Block(1, true, new int2(0, 0)));             //       STONE
-            byID.Add(new Block(2, true, textures));                   //       GRASS
+            byID.Add(new Block(2, true, textures, textures[0]));                   //       GRASS
             byID.Add(new Block(3, true, new int2(1, 0)));             //       DIRT
             byID.Add(new Block(4, true, new int2(0, 0)));             //       COBBLESTONE
             byID.Add(new Block(5, true, new int2(0, 0)));             //       PLANKS
@@ -206,7 +219,7 @@ public static class BlockData
             byID.Add(new Block(15, true, new int2(0, 0)));            //       IRON ORE
             byID.Add(new Block(16, true, new int2(0, 0)));            //       COAL ORE
             textures = new List<int2>() { new int2(2, 1), new int2(2, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1) };
-            byID.Add(new Block(17, true, textures));                  //       WOOD (LOG)
+            byID.Add(new Block(17, true, textures, textures[2]));                  //       WOOD (LOG)
             byID.Add(new Block(18, true, new int2(0, 0), false, 0, 1));//      LEAVES
             byID.Add(new Block(19, true, new int2(0, 0)));            //       SPONGE
             byID.Add(new Block(20, true, new int2(0, 0), false, 0, 2));//      GLASS

@@ -19,7 +19,7 @@ public class World : MonoBehaviour
 
     // World size (by chunks) / Maximum 16^3 or equivalent (4,096 chunks max, 16,777,216 blocks)
     // X, Y, Z                / Any value above that is highly unstable and might crash the game.
-    int3 WorldSize = new int3(4, 4, 4);
+    int3 WorldSize = new int3(16, 8, 16);
 
     [HideInInspector] public ushort GeneratedChunks = 0;
     
@@ -31,11 +31,15 @@ public class World : MonoBehaviour
     public Material MarchedBlockMaterial;
     public Material SelectedMaterial;
 
+    public float2 WorldSeed;
 
     #region "Create blockdata to work with and proceed to map generation"
 
     public void Awake()
     {
+        Unity.Mathematics.Random rand = new Unity.Mathematics.Random((uint)DateTime.Now.Millisecond);
+        WorldSeed = new float2(rand.NextFloat2(0f, 100f));
+
         Application.targetFrameRate = 300;
         QualitySettings.vSyncCount = 1;
         BlockData.InitalizeBlocks();
@@ -130,6 +134,8 @@ public class World : MonoBehaviour
                 + "Mapsize: " + WorldSize.x + "/" + WorldSize.y + "/" + WorldSize.z + "\n"
                 + "Blocks: " + (WorldSize.x * WorldSize.y * WorldSize.z)*16*16*16;
         }
+
+        
     }
 
     #region "Chunk stuff"

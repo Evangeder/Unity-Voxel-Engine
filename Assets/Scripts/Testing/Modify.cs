@@ -18,6 +18,8 @@ public class Modify : MonoBehaviour
 
     public GameObject SelectionVisualisationGO;
 
+    public GameObject Bomb;
+
     int BlockID = 1;
 
     int buildmode = 0;
@@ -58,6 +60,18 @@ public class Modify : MonoBehaviour
                 PlaceBlockGO.SetActive(false);
                 buildmode = 2;
                 BuildModeInfo.text = "<color=blue><b><i>Mode: Smooth block brush.</i></b></color>\n 0.05f by default, 0.15f with shift, 0.25f with ctrl. [LMB] to decrease smoothness value [RMB] to increase.\nMousewheel to change size (for removal only)";
+            }
+
+            if (Input.GetKeyDown(KeyCode.F))
+            {
+                GameObject newBomb = Instantiate(Bomb);
+                Vector3 temppos = transform.localPosition;
+                temppos.y += 2f;
+                newBomb.transform.localPosition = temppos;
+                newBomb.transform.rotation = transform.rotation;
+                newBomb.transform.localRotation = transform.localRotation;
+                //newBomb.GetComponent<Rigidbody>().AddForce(new Vector3(5f, 5f, 0f), ForceMode.Impulse);
+                newBomb.GetComponent<Rigidbody>().AddRelativeForce(transform.forward * 15f, ForceMode.Impulse);
             }
 
             RaycastHit hit;
@@ -152,7 +166,7 @@ public class Modify : MonoBehaviour
                         Vector3 position = hit.point;
                         Block WorkerBlock = EditTerrain.GetBlock(hit, false);
 
-                        if (WorkerBlock.GetID != 0 && WorkerBlock.Marched)
+                        if (WorkerBlock.Marched || WorkerBlock.GetID == 0)
                         {
                             if (WorkerBlock.MarchedValue < 1f)
                             {
@@ -167,6 +181,11 @@ public class Modify : MonoBehaviour
 
                                 EditTerrain.SetBlock(hit, WorkerBlock, false, false);
                                 timer = 1f;
+                            } else if (WorkerBlock.MarchedValue > 0.5f && WorkerBlock.GetID == 0) {
+                                WorkerBlock = BlockData.byID[1];
+                                WorkerBlock.Marched = true;
+                                WorkerBlock.MarchedValue = 0.501f;
+                                EditTerrain.SetBlock(hit, WorkerBlock, false, false);
                             } else {
                                 position += (hit.normal * 0.5f);
                                 hit.point = position;
@@ -202,10 +221,10 @@ public class Modify : MonoBehaviour
                                     float calculatedmarch = 0.15f - x / 50 - y / 50 - z / 50;
                                     if (calculatedmarch < 0.1f) calculatedmarch = 0.1f;
 
-                                    if (WorkerBlock.GetID != 0 && WorkerBlock.Marched)
+                                    if (WorkerBlock.GetID == 0 || WorkerBlock.Marched)
                                     {
 
-                                        if (WorkerBlock.MarchedValue > 0.501f)
+                                        if (WorkerBlock.MarchedValue > 0f)
                                         {
                                             if (Input.GetKey(KeyCode.LeftShift) && WorkerBlock.MarchedValue > 0.75f)
                                                 WorkerBlock.MarchedValue -= calculatedmarch;
@@ -214,13 +233,18 @@ public class Modify : MonoBehaviour
                                             else
                                                 WorkerBlock.MarchedValue -= 0.05f;
 
-                                            if (WorkerBlock.MarchedValue < 0.501f) WorkerBlock.MarchedValue = 0.501f;
-                                            EditTerrain.SetBlock(hit, WorkerBlock, false, false);
+                                            if (WorkerBlock.MarchedValue < 0f) WorkerBlock.MarchedValue = 0f;
+
+                                            if (WorkerBlock.MarchedValue < 0.501f) {
+                                                float tempmarch = WorkerBlock.MarchedValue;
+                                                WorkerBlock = BlockData.byID[0];
+                                                WorkerBlock.MarchedValue = tempmarch;
+                                                EditTerrain.SetBlock(hit, WorkerBlock, false, false);
+                                            } else {
+                                                EditTerrain.SetBlock(hit, WorkerBlock, false, false);
+                                            }
+
                                             timer = 1f;
-                                        }
-                                        else
-                                        {
-                                            EditTerrain.SetBlock(hit, BlockData.byID[0], false, false);
                                         }
                                     }
                                 }
@@ -289,7 +313,7 @@ public class Modify : MonoBehaviour
                     BlockID -= 1;
                 }
                 PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-                PlaceBlockMat.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[BlockID].Texture_Up.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Up.y * BlockData.BlockTileSize));
+                PlaceBlockMat.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
             }
             else if (Input.GetAxis("Mouse ScrollWheel") < 0f && buildmode == 0)
             { // backwards
@@ -302,7 +326,7 @@ public class Modify : MonoBehaviour
                     BlockID += 1;
                 }
                 PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-                PlaceBlockMat.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[BlockID].Texture_Up.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Up.y * BlockData.BlockTileSize));
+                PlaceBlockMat.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
             }
 
             if (Input.GetAxis("Mouse ScrollWheel") > 0f && buildmode == 2)
