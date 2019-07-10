@@ -209,7 +209,7 @@ public static class BlockData
 
             byID.Add(new Block(0));                                   //       AIR
             byID.Add(new Block(1, true, new int2(0, 0)));             //       STONE
-            byID.Add(new Block(2, true, textures, textures[0]));                   //       GRASS
+            byID.Add(new Block(2, true, textures, textures[0]));      //       GRASS
             byID.Add(new Block(3, true, new int2(1, 0)));             //       DIRT
             byID.Add(new Block(4, true, new int2(0, 0)));             //       COBBLESTONE
             byID.Add(new Block(5, true, new int2(0, 0)));             //       PLANKS
@@ -225,7 +225,7 @@ public static class BlockData
             byID.Add(new Block(15, true, new int2(0, 0)));            //       IRON ORE
             byID.Add(new Block(16, true, new int2(0, 0)));            //       COAL ORE
             textures = new List<int2>() { new int2(2, 1), new int2(2, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1) };
-            byID.Add(new Block(17, true, textures, textures[2]));                  //       WOOD (LOG)
+            byID.Add(new Block(17, true, textures, textures[2]));     //       WOOD (LOG)
             byID.Add(new Block(18, true, new int2(0, 0), false, 0, 1));//      LEAVES
             byID.Add(new Block(19, true, new int2(0, 0)));            //       SPONGE
             byID.Add(new Block(20, true, new int2(0, 0), false, 0, 2));//      GLASS

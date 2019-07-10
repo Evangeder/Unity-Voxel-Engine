@@ -29,7 +29,18 @@ public class Modify : MonoBehaviour
 
     void Start()
     {
-        Screen.SetResolution(854, 480, false);
+        IniFile Screen_INI = new IniFile("/Mods/Screen.ini");
+        if (Screen_INI.KeyExists("Resolution")) {
+            string[] temp = Screen_INI.Read("Resolution").Split('x');
+            Screen.SetResolution(int.Parse(temp[0]), int.Parse(temp[1]), bool.Parse(Screen_INI.Read("Fullscreen")));
+        } else {
+            Screen_INI.Write("Resolution", "854x480");
+            Screen_INI.Write("Fullscreen", "False");
+            Screen.SetResolution(854, 480, false);
+        }
+
+        //Application.targetFrameRate = 600;
+        //QualitySettings.vSyncCount = 0;
         //Cursor.lockState = CursorLockMode.Locked;
         //Cursor.visible = false;
     }
@@ -312,7 +323,7 @@ public class Modify : MonoBehaviour
                     BlockID -= 1;
                 }
                 PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-                PlaceBlockMat.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
+                PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
             }
             else if (Input.GetAxis("Mouse ScrollWheel") < 0f && buildmode == 0)
             { // backwards
@@ -324,8 +335,8 @@ public class Modify : MonoBehaviour
                 {
                     BlockID += 1;
                 }
-                PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-                PlaceBlockMat.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
+                PlaceBlockMat.SetTextureScale("_UnlitColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
+                PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
             }
 
             if (Input.GetAxis("Mouse ScrollWheel") > 0f && buildmode == 2)

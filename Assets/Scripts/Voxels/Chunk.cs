@@ -18,7 +18,7 @@ public class Chunk : MonoBehaviour
     public WorldPos pos;
     [ReadOnly] public static int chunkSize = BlockData.ChunkSize;
     
-    public Block[] blocks = new Block[4096];
+    public Block[] blocks = new Block[(int)math.pow(chunkSize, 3)];
 
     [Header("Sub-Chunk prefabs")]
     public GameObject Chunk_Water;
@@ -148,8 +148,8 @@ public class Chunk : MonoBehaviour
     {
         // When closing the game or switching to menu/new map, regain ownership of jobs if they are present and dispose every NativeArray/NativeList.
         // This is to prevent memory leaking.
-        if (!MapGen_JobHandle.IsCompleted) MapGen_JobHandle.Complete();
-        if (!Render_JobHandle.IsCompleted) Render_JobHandle.Complete();
+        MapGen_JobHandle.Complete();
+        Render_JobHandle.Complete();
         if (subTriangles_positions.IsCreated) subTriangles_positions.Dispose();
         if (subTriangles_values.IsCreated) subTriangles_values.Dispose();
         if (Native_blocks.IsCreated) Native_blocks.Dispose();
@@ -525,11 +525,9 @@ public class Chunk : MonoBehaviour
         [DeallocateOnJobCompletion] public NativeArray<bool> _blocks_greedy_W;
 
         // RENDERING OPTIONS
-        [ReadOnly] public bool UseGreedyMeshing; //TODO: Fix texturing (it's all stretched now) - Idea: Divide the mesh into submeshes and apply tri-planar shader for texturing.
+        [ReadOnly] public bool UseGreedyMeshing;
 
-        // MARCHING CUBES, Define this ONLY if you want to perform marching, otherwise, don't.
-        //[DeallocateOnJobCompletion] public NativeArray<float> MarchedBlocks;
-
+        // MARCHING CUBES
         [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> Table_EdgeConnection;
         [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<float> Table_EdgeDirection;
         [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> Table_CubeEdgeFlags;

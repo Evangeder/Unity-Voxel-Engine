@@ -117,3 +117,8 @@ MonoBehaviour:
   MarchingCubesSmoothness: 1
   update: 0
   TestMapgen: 0
+  MarchingTexture: {x: 0, y: 0}
+  DebugMarching:
+    x: 0
+    y: 0
+    z: 0

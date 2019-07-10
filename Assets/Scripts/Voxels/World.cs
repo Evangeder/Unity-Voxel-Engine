@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -10,19 +11,21 @@ using UnityEngine;
 public class World : MonoBehaviour
 {
     public Dictionary<WorldPos, Chunk> chunks = new Dictionary<WorldPos, Chunk>();
+    public Clouds[] clouds;
 
     public GameObject Prefab_Chunk;
-    
+    public GameObject Prefab_Clouds;
+
     // World name (redundant, but meh)
     public string worldName = "World v2";
     private bool Created = false;
 
     // World size (by chunks) / Maximum 16^3 or equivalent (4,096 chunks max, 16,777,216 blocks)
     // X, Y, Z                / Any value above that is highly unstable and might crash the game.
-    int3 WorldSize = new int3(32, 8, 32);
+    [HideInInspector] public int3 WorldSize = new int3(16, 8, 16);
 
     [HideInInspector] public ushort GeneratedChunks = 0;
-    
+
     //TEMP
     public GameObject GUI_MapLoadingOverlay;
     public UnityEngine.UI.Text GUI_MapLoadingText;
@@ -33,15 +36,22 @@ public class World : MonoBehaviour
 
     public float2 WorldSeed;
 
+    Unity.Mathematics.Random rand;
+
+    [Header("Clouds Settings")]
+    [Range(1f, 1000f)] public float CloudDensity = 42f;
+    [Range(1f, 1000f)] public float CloudDensity2 = 9f;
+    [Range(1f, 1000f)] public float HeightDivision = 1000f;
+
     #region "Create blockdata to work with and proceed to map generation"
 
     public void Awake()
     {
-        Unity.Mathematics.Random rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
+        rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
         WorldSeed = new float2(rand.NextFloat2(0f, 100f));
 
-        Application.targetFrameRate = 300;
-        QualitySettings.vSyncCount = 1;
+        
+        
         BlockData.InitalizeBlocks();
 
         string[] PropertyNames = BlockMaterial.GetTexturePropertyNames();
@@ -57,12 +67,15 @@ public class World : MonoBehaviour
         MarchedBlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
         MarchedBlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
 
-        SelectedMaterial.SetTextureOffset("_BaseColorMap", new Vector2(BlockData.byID[1].Texture_Up.x * BlockData.BlockTileSize, BlockData.byID[1].Texture_Up.y * BlockData.BlockTileSize));
-        SelectedMaterial.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-        SelectedMaterial.SetTexture("_BaseColorMap", BlockData.BlockTexture);
-        SelectedMaterial.GetTexture("_BaseColorMap").filterMode = FilterMode.Point;
+        SelectedMaterial.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[1].Texture_Up.x * BlockData.BlockTileSize, BlockData.byID[1].Texture_Up.y * BlockData.BlockTileSize));
+        SelectedMaterial.SetTextureScale("_UnlitColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
+        SelectedMaterial.SetTexture("_UnlitColorMap", BlockData.BlockTexture);
+        SelectedMaterial.GetTexture("_UnlitColorMap").filterMode = FilterMode.Point;
 
         StartCoroutine(CreateWorld());
+        
+        
+        
     }
 
     public IEnumerator CreateWorld()
@@ -120,8 +133,63 @@ public class World : MonoBehaviour
                 }
             }
         }
+
+        yield return new WaitForSeconds(1f);
+        int count = 0;
+        clouds = new Clouds[((WorldSize.x+10) * (WorldSize.z+10))];
+
+
+        for (int ix = -5; ix < WorldSize.x + 5; ix++)
+        {
+            for (int iz = -5; iz < WorldSize.z + 5; iz++)
+            {
+                GameObject newCloudsObject = Instantiate(Prefab_Clouds, new Vector3(0, 0, 0), Quaternion.Euler(Vector3.zero)) as GameObject;
+                newCloudsObject.transform.parent = transform;
+                newCloudsObject.name = "Clouds";
+                newCloudsObject.transform.localPosition = new Vector3(ix * 15, 0, iz * 15);
+
+                Clouds cloud = newCloudsObject.GetComponent<Clouds>();
+                cloud.world = this;
+                cloud.chunksize = new int3((int)math.pow(WorldSize.x, 3), (int)math.pow(WorldSize.y, 3), (int)math.pow(WorldSize.z, 3));
+                cloud.StartHeight = (int)math.pow(WorldSize.y, 3) - 12;
+                cloud.chunkpos = new int3(ix * 15, 0, iz * 15);
+                clouds[count] = cloud;
+                count++;
+            }
+        }
+
+
+        clouds = clouds.OrderBy(item => rand.NextInt()).ToArray();
+        for (int i = 0; i < clouds.Length; i++)
+            clouds[i].Instance = i;
+
+        for (int i = 0; i < clouds.Length; i++)
+        {
+            clouds[i].MotionFloat2.x += 0.005f;
+            clouds[i].MotionFloat2.y -= 0.005f;
+            clouds[i].GenerateAndRenderClouds();
+            if (i % 15 == 0)
+                yield return new WaitForEndOfFrame();
+        }
+
+        StartCoroutine(UpdateClouds());
         StopCoroutine(CreateWorld());
         yield return null;
+    }
+
+    public IEnumerator UpdateClouds()
+    {
+        while (true)
+        {
+            for (int i = 0; i < clouds.Length; i++)
+            {
+                clouds[i].MotionFloat2.x += 0.005f;
+                clouds[i].MotionFloat2.y -= 0.005f;
+                clouds[i].GenerateAndRenderClouds();
+                if (i % 2 == 0)
+                    yield return new WaitForEndOfFrame();
+            }
+        }
     }
 
     #endregion
