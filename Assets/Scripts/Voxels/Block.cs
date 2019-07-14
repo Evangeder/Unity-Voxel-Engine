@@ -12,7 +12,7 @@ public struct Block
         this = T;
     }
 
-    public Block(int ID, bool solid, int2 texture, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
+    public Block(int ID, bool solid, int2 texture, bool IsCustom = false, bool usephysics = false, float physicstime = 0f, int CullingMode = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -27,10 +27,11 @@ public struct Block
         this.PhysicsTime = physicstime;
         this.Marched = false;
         this.MarchedValue = 1f;
-        this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
+        this.CullingMode = CullingMode;
+        this.CustomBlock = IsCustom;
     }
 
-    public Block(int ID, bool solid, int2[] textures, int2 marched_texture, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
+    public Block(int ID, bool solid, int2[] textures, int2 marched_texture, bool IsCustom = false, bool usephysics = false, float physicstime = 0f, int CullingMode = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -45,10 +46,11 @@ public struct Block
         this.PhysicsTime = physicstime;
         this.Marched = false;
         this.MarchedValue = 1f;
-        this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
+        this.CullingMode = CullingMode;
+        this.CustomBlock = IsCustom;
     }
 
-    public Block(int ID, bool solid, List<int2> textures, int2 marched_texture, bool usephysics = false, float physicstime = 0f, int ShowOtherBlocksFaces = 0)
+    public Block(int ID, bool solid, List<int2> textures, int2 marched_texture, bool IsCustom = false, bool usephysics = false, float physicstime = 0f, int CullingMode = 0)
     {
         this.GetID = ID;
         this.Solid = solid;
@@ -63,7 +65,8 @@ public struct Block
         this.PhysicsTime = physicstime;
         this.Marched = false;
         this.MarchedValue = 1f;
-        this.ShowOtherBlockFaces = ShowOtherBlocksFaces;
+        this.CullingMode = CullingMode;
+        this.CustomBlock = IsCustom;
     }
 
     public Block(int ID)
@@ -81,7 +84,8 @@ public struct Block
         this.PhysicsTime = new float();
         this.Marched = false;
         this.MarchedValue = 1f;
-        this.ShowOtherBlockFaces = 0;
+        this.CullingMode = 0;
+        this.CustomBlock = false;
     }
     
     public int GetID { get; }
@@ -98,8 +102,10 @@ public struct Block
     public bool UsePhysics { get; }
     public float PhysicsTime { get; }
     public bool Marched { get; set; }
-    public int ShowOtherBlockFaces { get; }
+    public int CullingMode { get; }
     public float MarchedValue { get; set; }
+    
+    public bool CustomBlock { get; set; }
 }
 
 public static class BlockData
@@ -111,6 +117,7 @@ public static class BlockData
     //public static string TextureFilename;
     //public static int2 TextureSize;
     public static Texture2D BlockTexture;
+    public static string[] BlockNames;
 
     public static int GetAddress(int x, int y, int z, int size = 16)
     {
@@ -149,8 +156,11 @@ public static class BlockData
             }
 
             int MaxBlocks = int.Parse(Blocks_INI.Read("Blocktypes"));
+            BlockNames = new string[MaxBlocks];
+
             for (int i = 0; i < MaxBlocks; i++)
             {
+                BlockNames[i] = Blocks_INI.Read("Name", "" + i);
                 if (Blocks_INI.KeyExists("Texture_Up", "" + i))
                 {
                     int2[] tex = new int2[6];
@@ -177,16 +187,18 @@ public static class BlockData
 
                     byID.Add(new Block(i, bool.Parse(Blocks_INI.Read("Solid", "" + i)),
                         tex, tex_marched,
+                        bool.Parse(Blocks_INI.Read("Foliage", "" + i)),
                         bool.Parse(Blocks_INI.Read("Uses_Physics", "" + i)),
                         int.Parse(Blocks_INI.Read("Physics_Time", "" + i)),
-                        int.Parse(Blocks_INI.Read("Show_Other_Block_Faces", "" + i))));
+                        int.Parse(Blocks_INI.Read("CullingMode", "" + i))));
                 } else {
                     string[] tempstr2 = Blocks_INI.Read("Texture", "" + i).Split(',');
                     byID.Add(new Block(i, bool.Parse(Blocks_INI.Read("Solid", "" + i)),
                         new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1])),
+                        bool.Parse(Blocks_INI.Read("Foliage", "" + i)),
                         bool.Parse(Blocks_INI.Read("Uses_Physics", "" + i)),
                         int.Parse(Blocks_INI.Read("Physics_Time", "" + i)),
-                        int.Parse(Blocks_INI.Read("Show_Other_Block_Faces", "" + i))));
+                        int.Parse(Blocks_INI.Read("CullingMode", "" + i))));
                 }
             }
         } else {
@@ -207,48 +219,48 @@ public static class BlockData
                 new int2(3, 0)  // west
             };
 
-            byID.Add(new Block(0));                                   //       AIR
-            byID.Add(new Block(1, true, new int2(0, 0)));             //       STONE
-            byID.Add(new Block(2, true, textures, textures[0]));      //       GRASS
-            byID.Add(new Block(3, true, new int2(1, 0)));             //       DIRT
-            byID.Add(new Block(4, true, new int2(0, 0)));             //       COBBLESTONE
-            byID.Add(new Block(5, true, new int2(0, 0)));             //       PLANKS
-            byID.Add(new Block(6, true, new int2(0, 0)));             //       SAPPLING
-            byID.Add(new Block(7, true, new int2(0, 0)));             //       BEDROCK
-            byID.Add(new Block(8, true, new int2(0, 0)));             //       FLOWING WATER
-            byID.Add(new Block(9, true, new int2(0, 0)));             //       STATIONARY WATER
-            byID.Add(new Block(10, true, new int2(0, 0)));            //       FLOWING LAVA
-            byID.Add(new Block(11, true, new int2(0, 0)));            //       STATIONARY LAVA
-            byID.Add(new Block(12, true, new int2(0, 0)));            //       SAND
-            byID.Add(new Block(13, true, new int2(0, 0)));            //       GRAVEL
-            byID.Add(new Block(14, true, new int2(0, 0)));            //       GOLD ORE
-            byID.Add(new Block(15, true, new int2(0, 0)));            //       IRON ORE
-            byID.Add(new Block(16, true, new int2(0, 0)));            //       COAL ORE
+            byID.Add(new Block(0));                                                 //       AIR
+            byID.Add(new Block(1, true, new int2(0, 0)));                           //       STONE
+            byID.Add(new Block(2, true, textures, textures[0]));                    //       GRASS
+            byID.Add(new Block(3, true, new int2(1, 0)));                           //       DIRT
+            byID.Add(new Block(4, true, new int2(0, 0)));                           //       COBBLESTONE
+            byID.Add(new Block(5, true, new int2(0, 0)));                           //       PLANKS
+            byID.Add(new Block(6, true, new int2(0, 0)));                           //       SAPPLING
+            byID.Add(new Block(7, true, new int2(0, 0)));                           //       BEDROCK
+            byID.Add(new Block(8, true, new int2(0, 0)));                           //       FLOWING WATER
+            byID.Add(new Block(9, true, new int2(0, 0)));                           //       STATIONARY WATER
+            byID.Add(new Block(10, true, new int2(0, 0)));                          //       FLOWING LAVA
+            byID.Add(new Block(11, true, new int2(0, 0)));                          //       STATIONARY LAVA
+            byID.Add(new Block(12, true, new int2(0, 0)));                          //       SAND
+            byID.Add(new Block(13, true, new int2(0, 0)));                          //       GRAVEL
+            byID.Add(new Block(14, true, new int2(0, 0)));                          //       GOLD ORE
+            byID.Add(new Block(15, true, new int2(0, 0)));                          //       IRON ORE
+            byID.Add(new Block(16, true, new int2(0, 0)));                          //       COAL ORE
             textures = new List<int2>() { new int2(2, 1), new int2(2, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1), new int2(1, 1) };
-            byID.Add(new Block(17, true, textures, textures[2]));     //       WOOD (LOG)
-            byID.Add(new Block(18, true, new int2(0, 0), false, 0, 1));//      LEAVES
-            byID.Add(new Block(19, true, new int2(0, 0)));            //       SPONGE
-            byID.Add(new Block(20, true, new int2(0, 0), false, 0, 2));//      GLASS
-            byID.Add(new Block(21, true, new int2(0, 0)));            //       CLOTH (RED)
-            byID.Add(new Block(22, true, new int2(0, 0)));            //       CLOTH (ORANGE)
-            byID.Add(new Block(23, true, new int2(0, 0)));            //       CLOTH (YELLOW)
-            byID.Add(new Block(24, true, new int2(0, 0)));            //       CLOTH (CHARTREUSE)
-            byID.Add(new Block(25, true, new int2(0, 0)));            //       CLOTH (GREEN)
-            byID.Add(new Block(26, true, new int2(0, 0)));            //       CLOTH (SPRING GREEN)
-            byID.Add(new Block(27, true, new int2(0, 0)));            //       CLOTH (CYAN)
-            byID.Add(new Block(28, true, new int2(0, 0)));            //       CLOTH (CAPRI)
-            byID.Add(new Block(29, true, new int2(0, 0)));            //       CLOTH (ULTRAMARINE)
-            byID.Add(new Block(30, true, new int2(0, 0)));            //       CLOTH (VIOLET)
-            byID.Add(new Block(31, true, new int2(0, 0)));            //       CLOTH (PURPLE)
-            byID.Add(new Block(32, true, new int2(0, 0)));            //       CLOTH (MAGNETA)
-            byID.Add(new Block(33, true, new int2(0, 0)));            //       CLOTH (ROSE)
+            byID.Add(new Block(17, true, textures, textures[2]));                   //       WOOD (LOG)
+            byID.Add(new Block(18, true, new int2(0, 0), false, false, 0, 1));      //       LEAVES
+            byID.Add(new Block(19, true, new int2(0, 0)));                          //       SPONGE
+            byID.Add(new Block(20, true, new int2(0, 0), false, false, 0, 2));      //       GLASS
+            byID.Add(new Block(21, true, new int2(0, 0)));                          //       CLOTH (RED)
+            byID.Add(new Block(22, true, new int2(0, 0)));                          //       CLOTH (ORANGE)
+            byID.Add(new Block(23, true, new int2(0, 0)));                          //       CLOTH (YELLOW)
+            byID.Add(new Block(24, true, new int2(0, 0)));                          //       CLOTH (CHARTREUSE)
+            byID.Add(new Block(25, true, new int2(0, 0)));                          //       CLOTH (GREEN)
+            byID.Add(new Block(26, true, new int2(0, 0)));                          //       CLOTH (SPRING GREEN)
+            byID.Add(new Block(27, true, new int2(0, 0)));                          //       CLOTH (CYAN)
+            byID.Add(new Block(28, true, new int2(0, 0)));                          //       CLOTH (CAPRI)
+            byID.Add(new Block(29, true, new int2(0, 0)));                          //       CLOTH (ULTRAMARINE)
+            byID.Add(new Block(30, true, new int2(0, 0)));                          //       CLOTH (VIOLET)
+            byID.Add(new Block(31, true, new int2(0, 0)));                          //       CLOTH (PURPLE)
+            byID.Add(new Block(32, true, new int2(0, 0)));                          //       CLOTH (MAGNETA)
+            byID.Add(new Block(33, true, new int2(0, 0)));                          //       CLOTH (ROSE)
 
             Blocks_INI.Write("Blocktypes", (byID.Count - 1) + "");
 
             for (int i = 0; i < byID.Count; i++)
             {
                 Blocks_INI.Write("Solid", byID[i].Solid + "", i + "");
-                Blocks_INI.Write("Show_Other_Block_Faces", byID[i].ShowOtherBlockFaces + "", "" + i);
+                Blocks_INI.Write("CullingMode", byID[i].CullingMode + "", "" + i);
                 if ((byID[i].Texture_East.x == byID[i].Texture_Up.x && byID[i].Texture_East.y == byID[i].Texture_Up.y) &&
                         (byID[i].Texture_West.x == byID[i].Texture_Up.x && byID[i].Texture_West.y == byID[i].Texture_Up.y) &&
                         (byID[i].Texture_North.x == byID[i].Texture_Up.x && byID[i].Texture_North.y == byID[i].Texture_Up.y) &&
@@ -265,6 +277,7 @@ public static class BlockData
                     Blocks_INI.Write("Texture_East", byID[i].Texture_East.x + "," + byID[i].Texture_East.y, "" + i);
                     Blocks_INI.Write("Texture_West", byID[i].Texture_West.x + "," + byID[i].Texture_West.y, "" + i);
                 }
+                Blocks_INI.Write("Foliage", byID[i].CustomBlock + "", i + "");
                 Blocks_INI.Write("Uses_Physics", byID[i].UsePhysics + "", i + "");
                 Blocks_INI.Write("Physics_Time", byID[i].PhysicsTime + "", i + "");
             }
@@ -280,6 +293,22 @@ public static class BlockData
                     + "Please create or drag Blocks.png file to path: <i>" + Application.dataPath + "/Mods/</i>.");
             }
         }
+    }
+
+    public static int GetIDFromName(string Name)
+    {
+        for (int i = 0; i < byID.Count; i++)
+        {
+            if (BlockNames[i] == Name)
+            {
+                return i;
+            }
+        }
+        return 0;    
+    }
+    public static string GetNameFromID(int ID)
+    {
+        return BlockNames[ID];
     }
 }
 

@@ -60,6 +60,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: ce6988209b0bebd4282fb8da35db9563, type: 2}
+  - {fileID: 2100000, guid: 7683731f0ade721499c1f34f9cc2cbb4, type: 2}
   - {fileID: 2100000, guid: 1e9d1a4f8da54064aa26849aa1a6ab94, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
@@ -117,8 +118,3 @@ MonoBehaviour:
   MarchingCubesSmoothness: 1
   update: 0
   TestMapgen: 0
-  MarchingTexture: {x: 0, y: 0}
-  DebugMarching:
-    x: 0
-    y: 0
-    z: 0

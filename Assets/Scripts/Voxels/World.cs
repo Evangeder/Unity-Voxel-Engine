@@ -18,11 +18,12 @@ public class World : MonoBehaviour
 
     // World name (redundant, but meh)
     public string worldName = "World v2";
+    string MapLoadInfo = "Generating world";
     private bool Created = false;
 
     // World size (by chunks) / Maximum 16^3 or equivalent (4,096 chunks max, 16,777,216 blocks)
     // X, Y, Z                / Any value above that is highly unstable and might crash the game.
-    [HideInInspector] public int3 WorldSize = new int3(16, 8, 16);
+    public int3 WorldSize = new int3(1, 1, 1); //16, 8, 16
 
     [HideInInspector] public ushort GeneratedChunks = 0;
 
@@ -39,9 +40,12 @@ public class World : MonoBehaviour
     Unity.Mathematics.Random rand;
 
     [Header("Clouds Settings")]
+    public bool AnimateClouds = false;
+    bool isAnimating = false;
     [Range(1f, 1000f)] public float CloudDensity = 42f;
     [Range(1f, 1000f)] public float CloudDensity2 = 9f;
     [Range(1f, 1000f)] public float HeightDivision = 1000f;
+    [Range(2, 10)] public int CloudUpdateSpeed = 2;
 
     #region "Create blockdata to work with and proceed to map generation"
 
@@ -50,8 +54,6 @@ public class World : MonoBehaviour
         rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
         WorldSeed = new float2(rand.NextFloat2(0f, 100f));
 
-        
-        
         BlockData.InitalizeBlocks();
 
         string[] PropertyNames = BlockMaterial.GetTexturePropertyNames();
@@ -73,9 +75,6 @@ public class World : MonoBehaviour
         SelectedMaterial.GetTexture("_UnlitColorMap").filterMode = FilterMode.Point;
 
         StartCoroutine(CreateWorld());
-        
-        
-        
     }
 
     public IEnumerator CreateWorld()
@@ -109,12 +108,12 @@ public class World : MonoBehaviour
             }
         }
 
-        while (GeneratedChunks < (WorldSize.x * WorldSize.y * WorldSize.z))
+        while (GeneratedChunks < (WorldSize.x * WorldSize.y * WorldSize.z)/2)
         {
             yield return null;
         }
 
-        GUI_MapLoadingOverlay.SetActive(false);
+        MapLoadInfo = "Rendering world...";
 
         for (int x = 0; x <= WorldSize.x; x++)
         {
@@ -125,7 +124,7 @@ public class World : MonoBehaviour
                     GetChunk(x * Chunk.chunkSize, y * Chunk.chunkSize, z * Chunk.chunkSize).update = true;
                     
                     delay++;
-                    if (delay > WorldSize.y)
+                    if (delay > WorldSize.y*3)
                     {
                         delay = 0;
                         yield return new WaitForEndOfFrame();
@@ -134,7 +133,10 @@ public class World : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(1f);
+        MapLoadInfo = "Placing clouds...";
+
+        yield return new WaitForEndOfFrame();
+
         int count = 0;
         clouds = new Clouds[((WorldSize.x+10) * (WorldSize.z+10))];
 
@@ -158,7 +160,6 @@ public class World : MonoBehaviour
             }
         }
 
-
         clouds = clouds.OrderBy(item => rand.NextInt()).ToArray();
         for (int i = 0; i < clouds.Length; i++)
             clouds[i].Instance = i;
@@ -168,9 +169,9 @@ public class World : MonoBehaviour
             clouds[i].MotionFloat2.x += 0.005f;
             clouds[i].MotionFloat2.y -= 0.005f;
             clouds[i].GenerateAndRenderClouds();
-            if (i % 15 == 0)
-                yield return new WaitForEndOfFrame();
         }
+
+        GUI_MapLoadingOverlay.SetActive(false);
 
         StartCoroutine(UpdateClouds());
         StopCoroutine(CreateWorld());
@@ -181,31 +182,35 @@ public class World : MonoBehaviour
     {
         while (true)
         {
+            isAnimating = true;
             for (int i = 0; i < clouds.Length; i++)
             {
                 clouds[i].MotionFloat2.x += 0.005f;
                 clouds[i].MotionFloat2.y -= 0.005f;
                 clouds[i].GenerateAndRenderClouds();
-                if (i % 2 == 0)
+                if (i % CloudUpdateSpeed == 0)
                     yield return new WaitForEndOfFrame();
             }
+            if (!AnimateClouds) break;
         }
+        isAnimating = false;
     }
 
     #endregion
 
     public void Update()
     {
-
-        if (GeneratedChunks < ((WorldSize.x) * (WorldSize.y) * (WorldSize.z)))
+        if (AnimateClouds && !isAnimating) StartCoroutine(UpdateClouds());
+        if (GUI_MapLoadingText.isActiveAndEnabled)
         {
-            float onepercent = (WorldSize.x * WorldSize.y * WorldSize.z) / 100f;
-            GUI_MapLoadingText.text = "Generating world... " + (Mathf.FloorToInt(GeneratedChunks / onepercent)) + "%\n"
-                + "Mapsize: " + WorldSize.x + "/" + WorldSize.y + "/" + WorldSize.z + "\n"
-                + "Blocks: " + (WorldSize.x * WorldSize.y * WorldSize.z)*16*16*16;
+            if (GeneratedChunks < ((WorldSize.x) * (WorldSize.y) * (WorldSize.z)))
+            {
+                float onepercent = (WorldSize.x * WorldSize.y * WorldSize.z) / 100f;
+                GUI_MapLoadingText.text = MapLoadInfo + " " + (Mathf.FloorToInt(GeneratedChunks / onepercent)) + "%";
+            } else {
+                GUI_MapLoadingText.text = MapLoadInfo;
+            }
         }
-
-        
     }
 
     #region "Chunk stuff"
@@ -302,7 +307,7 @@ public class World : MonoBehaviour
                     for (int iz = -1; iz < 2; iz++)
                     {
                         Chunk tempchunk = GetChunk(x + ix, y + iy, z + iz);
-                        if (tempchunk != chunk)
+                        if (tempchunk != chunk && tempchunk != null)
                             tempchunk.update = true;
                     }
                 }

@@ -60,7 +60,7 @@ public class Clouds : MonoBehaviour
         int nextrand = rand.NextInt(1, 25);
         if (UpdateFramesCounter < UpdateFramesDelay) UpdateFramesCounter += nextrand;*/
 
-        transform.Translate(Vector3.forward * Time.deltaTime * 1f);
+        transform.Translate(Vector3.forward * Time.deltaTime * 5f);
         if (transform.position.z > (world.WorldSize.z + 5) * BlockData.ChunkSize)
         {
             filter.mesh.Clear();
