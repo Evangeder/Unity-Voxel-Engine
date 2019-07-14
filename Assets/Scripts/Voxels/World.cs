@@ -30,13 +30,10 @@ public class World : MonoBehaviour
     //TEMP
     public GameObject GUI_MapLoadingOverlay;
     public UnityEngine.UI.Text GUI_MapLoadingText;
-
     public Material BlockMaterial;
     public Material MarchedBlockMaterial;
     public Material SelectedMaterial;
-
     public float2 WorldSeed;
-
     Unity.Mathematics.Random rand;
 
     [Header("Clouds Settings")]
@@ -54,7 +51,7 @@ public class World : MonoBehaviour
         rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
         WorldSeed = new float2(rand.NextFloat2(0f, 100f));
 
-        BlockData.InitalizeBlocks();
+        BlockData.InitializeBlocks();
 
         string[] PropertyNames = BlockMaterial.GetTexturePropertyNames();
 
@@ -74,7 +71,8 @@ public class World : MonoBehaviour
         SelectedMaterial.SetTexture("_UnlitColorMap", BlockData.BlockTexture);
         SelectedMaterial.GetTexture("_UnlitColorMap").filterMode = FilterMode.Point;
 
-        StartCoroutine(CreateWorld());
+        MapLoadInfo = "Connecting...";
+        //StartCoroutine(CreateWorld());
     }
 
     public IEnumerator CreateWorld()
@@ -203,7 +201,7 @@ public class World : MonoBehaviour
         if (AnimateClouds && !isAnimating) StartCoroutine(UpdateClouds());
         if (GUI_MapLoadingText.isActiveAndEnabled)
         {
-            if (GeneratedChunks < ((WorldSize.x) * (WorldSize.y) * (WorldSize.z)))
+            if (GeneratedChunks < ((WorldSize.x) * (WorldSize.y) * (WorldSize.z)) && MapLoadInfo != "Connecting...")
             {
                 float onepercent = (WorldSize.x * WorldSize.y * WorldSize.z) / 100f;
                 GUI_MapLoadingText.text = MapLoadInfo + " " + (Mathf.FloorToInt(GeneratedChunks / onepercent)) + "%";

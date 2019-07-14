@@ -124,8 +124,16 @@ public static class BlockData
         return (x + y * size + z * size * size);
     }
 
-    public static void InitalizeBlocks()
+    public static void InitializeServerBlocks()
     {
+        byID.Clear();
+
+    }
+
+    public static void InitializeBlocks()
+    {
+        byID.Clear();
+
         BlockTexture = new Texture2D(128, 128);
 
         if (!Directory.Exists(Application.dataPath + "/Mods"))
