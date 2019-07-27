@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BeardedManStudios.Forge.Networking.Unity;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,8 +19,8 @@ public class World : MonoBehaviour
 
     // World name (redundant, but meh)
     public string worldName = "World v2";
-    string MapLoadInfo = "Generating world";
-    private bool Created = false;
+    public string MapLoadInfo;
+    public bool Created = false;
 
     // World size (by chunks) / Maximum 16^3 or equivalent (4,096 chunks max, 16,777,216 blocks)
     // X, Y, Z                / Any value above that is highly unstable and might crash the game.
@@ -44,6 +45,9 @@ public class World : MonoBehaviour
     [Range(1f, 1000f)] public float HeightDivision = 1000f;
     [Range(2, 10)] public int CloudUpdateSpeed = 2;
 
+    //NETWORKING
+    private World_Network Networking;
+
     #region "Create blockdata to work with and proceed to map generation"
 
     public void Awake()
@@ -51,25 +55,7 @@ public class World : MonoBehaviour
         rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
         WorldSeed = new float2(rand.NextFloat2(0f, 100f));
 
-        BlockData.InitializeBlocks();
-
-        string[] PropertyNames = BlockMaterial.GetTexturePropertyNames();
-
-        BlockMaterial.SetFloat("Vector1_430CB87B", BlockData.BlockTileSize);
-        BlockMaterial.SetFloat("Vector1_7C9B6D59", BlockData.TextureSize);
-        BlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
-        BlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
-
-        PropertyNames = MarchedBlockMaterial.GetTexturePropertyNames();
-        MarchedBlockMaterial.SetFloat("Vector1_430CB87B", BlockData.BlockTileSize);
-        MarchedBlockMaterial.SetFloat("Vector1_7C9B6D59", BlockData.TextureSize);
-        MarchedBlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
-        MarchedBlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
-
-        SelectedMaterial.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[1].Texture_Up.x * BlockData.BlockTileSize, BlockData.byID[1].Texture_Up.y * BlockData.BlockTileSize));
-        SelectedMaterial.SetTextureScale("_UnlitColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-        SelectedMaterial.SetTexture("_UnlitColorMap", BlockData.BlockTexture);
-        SelectedMaterial.GetTexture("_UnlitColorMap").filterMode = FilterMode.Point;
+        Networking = gameObject.GetComponent<World_Network>();
 
         MapLoadInfo = "Connecting...";
         //StartCoroutine(CreateWorld());
@@ -77,13 +63,24 @@ public class World : MonoBehaviour
 
     public IEnumerator CreateWorld()
     {
-        List<WorldPos> Chunk_InstantiateList = new List<WorldPos>();
-        List<WorldPos> Chunk_GenerateList = new List<WorldPos>();
-        List<WorldPos> buildList2 = new List<WorldPos>();
-        List<WorldPos> saveList = new List<WorldPos>();
+        NetworkManager.Instance.InstantiatePlayer_Networking();
 
-        Created = true;
+        GUI_MapLoadingOverlay.SetActive(true);
+        if (chunks.Count() > 0)
+        {
+            foreach (KeyValuePair<WorldPos, Chunk> chunk in chunks)
+                Destroy(chunk.Value.gameObject);
+
+            foreach (Clouds cld in clouds)
+                Destroy(cld.gameObject);
+
+            chunks.Clear();
+            clouds = new Clouds[0];
+            Debug.Log("Cleared old chunks and clouds.");
+        }
         int delay = 0;
+
+        MapLoadInfo = "Generating world...";
 
         for (int x = 0; x <= WorldSize.x; x++)
         {
@@ -106,12 +103,10 @@ public class World : MonoBehaviour
             }
         }
 
-        while (GeneratedChunks < (WorldSize.x * WorldSize.y * WorldSize.z)/2)
+        while ((GeneratedChunks < (WorldSize.x * WorldSize.y * WorldSize.z) / 2))
         {
             yield return null;
         }
-
-        MapLoadInfo = "Rendering world...";
 
         for (int x = 0; x <= WorldSize.x; x++)
         {
@@ -173,6 +168,7 @@ public class World : MonoBehaviour
 
         StartCoroutine(UpdateClouds());
         StopCoroutine(CreateWorld());
+        Created = true;
         yield return null;
     }
 
@@ -198,17 +194,8 @@ public class World : MonoBehaviour
 
     public void Update()
     {
+        if (GUI_MapLoadingText.text != MapLoadInfo) GUI_MapLoadingText.text = MapLoadInfo;
         if (AnimateClouds && !isAnimating) StartCoroutine(UpdateClouds());
-        if (GUI_MapLoadingText.isActiveAndEnabled)
-        {
-            if (GeneratedChunks < ((WorldSize.x) * (WorldSize.y) * (WorldSize.z)) && MapLoadInfo != "Connecting...")
-            {
-                float onepercent = (WorldSize.x * WorldSize.y * WorldSize.z) / 100f;
-                GUI_MapLoadingText.text = MapLoadInfo + " " + (Mathf.FloorToInt(GeneratedChunks / onepercent)) + "%";
-            } else {
-                GUI_MapLoadingText.text = MapLoadInfo;
-            }
-        }
     }
 
     #region "Chunk stuff"
@@ -289,13 +276,17 @@ public class World : MonoBehaviour
 
     }
 
-    public void SetBlock(int x, int y, int z, Block block, byte modifier = 0, bool UsePhysics = false, bool PlacedByPhysics = false)
+    public void SetBlock(int x, int y, int z, Block block, bool FromNetwork = false)
     {
         Chunk chunk = GetChunk(x, y, z);
 
+        // Check if the block was placed via network to prevent echoing
+        if (!FromNetwork) Networking.SetBlock_Caller(x, y, z, block);
+
         if (chunk != null)
         {
-            chunk.SetBlock(x - chunk.pos.x, y - chunk.pos.y, z - chunk.pos.z, block, UsePhysics);
+            chunk.SetBlock(x - chunk.pos.x, y - chunk.pos.y, z - chunk.pos.z, block);
+            
             chunk.update = true;
 
             for (int ix = -1; ix < 2; ix++)

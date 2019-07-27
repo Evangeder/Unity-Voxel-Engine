@@ -52,7 +52,7 @@ public static class EditTerrain
 
         WorldPos pos = GetBlockPos(hit, adjacent);
 
-        chunk.world.SetBlock(pos.x, pos.y, pos.z, block, 0, UsePhysics);
+        chunk.world.SetBlock(pos.x, pos.y, pos.z, block);
 
         return true;
     }

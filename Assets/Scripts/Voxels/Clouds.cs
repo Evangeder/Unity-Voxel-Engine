@@ -21,7 +21,6 @@ public class Clouds : MonoBehaviour
 
     // Job system
     private JobHandle Clouds_JobHandle = new JobHandle();
-    bool IsRendering = false;
 
     // Mesh info
     MeshFilter filter;
@@ -191,8 +190,6 @@ public class Clouds : MonoBehaviour
                 Table_TriangleConnection = T_TriangleConnectionTable,
                 Table_VertexOffset = T_VertexOffset,
             };
-
-            IsRendering = true;
             Clouds_JobHandle = job.Schedule();
         }
     }

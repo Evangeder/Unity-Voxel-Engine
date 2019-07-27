@@ -91,7 +91,7 @@ public class Chunk : MonoBehaviour
     }
 
 #pragma warning disable 168
-    public void SetBlock(int x, int y, int z, Block block, bool Physics = false)
+    public void SetBlock(int x, int y, int z, Block block)
     {
         try {
             if (blocks[x + y * 16 + z * 256].GetID != 0)
@@ -106,10 +106,10 @@ public class Chunk : MonoBehaviour
         }
         else
         {
-            world.SetBlock(pos.x + x, pos.y + y, pos.z + z, block, 0, Physics);
+            world.SetBlock(pos.x + x, pos.y + y, pos.z + z, block);
         }
 
-        try
+        /*try
         {
             if (blocks[x + y * 16 + z * 256].GetID != 0 && Physics == true)
             {
@@ -120,7 +120,7 @@ public class Chunk : MonoBehaviour
         catch (Exception e)
         {
             //Debug.Log ("Can't run OnDelete() on block " + this.GetType ().ToString () + ", at " + x + ", " + y + ", " + z);
-        }
+        }*/
     }
 #pragma warning restore 168
 
@@ -539,12 +539,19 @@ public class Chunk : MonoBehaviour
                         }
                         if (_blocks[GetAddress(x,y,z)].GetID != 0) {
                             if (!_blocks[GetAddress(x, y, z)].Marched) {
-                                if (x == 0) tbmx = _blocks_MinusX[GetAddress(chunkSize - 1, y, z)]; else tbmx = _blocks[GetAddress(x - 1, y, z)];
+                                tbmx = x == 0             ? _blocks_MinusX[GetAddress(chunkSize - 1, y, z)] : _blocks[GetAddress(x - 1, y, z)];
+                                tbpx = x == chunkSize - 1 ?  _blocks_PlusX[GetAddress(0, y, z)]             : _blocks[GetAddress(x + 1, y, z)];
+                                tbmy = y == 0             ? _blocks_MinusY[GetAddress(x, chunkSize - 1, z)] : _blocks[GetAddress(x, y - 1, z)];
+                                tbpy = y == chunkSize - 1 ?  _blocks_PlusY[GetAddress(x, 0, z)]             : _blocks[GetAddress(x, y + 1, z)];
+                                tbmz = z == 0             ? _blocks_MinusZ[GetAddress(x, y, chunkSize - 1)] : _blocks[GetAddress(x, y, z - 1)];
+                                tbpz = z == chunkSize - 1 ?  _blocks_PlusZ[GetAddress(x, y, 0)]             : _blocks[GetAddress(x, y, z + 1)];
+
+                                /*if (x == 0) tbmx = _blocks_MinusX[GetAddress(chunkSize - 1, y, z)]; else tbmx = _blocks[GetAddress(x - 1, y, z)];
                                 if (x == chunkSize - 1) tbpx = _blocks_PlusX[GetAddress(0, y, z)]; else tbpx = _blocks[GetAddress(x + 1, y, z)];
                                 if (y == 0) tbmy = _blocks_MinusY[GetAddress(x, chunkSize - 1, z)]; else tbmy = _blocks[GetAddress(x, y - 1, z)];
                                 if (y == chunkSize - 1) tbpy = _blocks_PlusY[GetAddress(x, 0, z)]; else tbpy = _blocks[GetAddress(x, y + 1, z)];
                                 if (z == 0) tbmz = _blocks_MinusZ[GetAddress(x, y, chunkSize - 1)]; else tbmz = _blocks[GetAddress(x, y, z - 1)];
-                                if (z == chunkSize - 1) tbpz = _blocks_PlusZ[GetAddress(x, y, 0)]; else tbpz = _blocks[GetAddress(x, y, z + 1)];
+                                if (z == chunkSize - 1) tbpz = _blocks_PlusZ[GetAddress(x, y, 0)]; else tbpz = _blocks[GetAddress(x, y, z + 1)];*/
 
                                 tb = _blocks[GetAddress(x, y, z)];
                                     

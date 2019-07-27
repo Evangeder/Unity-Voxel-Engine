@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using System;
 using System.IO;
 
+[Serializable]
 public struct Block
 {
     public Block(Block T)
@@ -108,6 +109,7 @@ public struct Block
     public bool CustomBlock { get; set; }
 }
 
+[Serializable]
 public static class BlockData
 {
     public static int ChunkSize = 16;
@@ -124,13 +126,34 @@ public static class BlockData
         return (x + y * size + z * size * size);
     }
 
-    public static void InitializeServerBlocks()
+    public static void InitalizeClient()
     {
         byID.Clear();
+        BlockTexture = new Texture2D(128, 128);
+        if (!Directory.Exists(Application.dataPath + "/Mods"))
+            Directory.CreateDirectory(Application.dataPath + "/Mods");
 
+        IniFile Blocks_INI = new IniFile("/Mods/Blocks.ini");
+        if (File.Exists(Application.dataPath + "/Mods/" + Blocks_INI.Read("Texture_File")))
+        {
+            byte[] bytes = File.ReadAllBytes(Application.dataPath + "/Mods/" + Blocks_INI.Read("Texture_File"));
+            BlockTexture = new Texture2D(int.Parse(Blocks_INI.Read("Texture_Width")), int.Parse(Blocks_INI.Read("Texture_Height")), TextureFormat.RGB24, false);
+            BlockTexture.filterMode = FilterMode.Point;
+            BlockTexture.LoadImage(bytes);
+        } else {
+            Debug.Log("<color=red><b>COULD NOT FIND TEXTURES FILE!</b></color>, game will continue to run without texturing.\n"
+                + "Please create or drag Blocks.png file to path: <i>" + Application.dataPath + "/Mods/</i>.");
+        }
+
+        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture;
+
+        if (Blocks_INI.KeyExists("TileSize"))
+            BlockTileSize = float.Parse(Blocks_INI.Read("TileSize"), culture);
+        if (Blocks_INI.KeyExists("TextureSize"))
+            TextureSize = float.Parse(Blocks_INI.Read("TextureSize"), culture);
     }
 
-    public static void InitializeBlocks()
+    public static void InitializeBlocks(bool IsServer = true)
     {
         byID.Clear();
 
@@ -138,6 +161,7 @@ public static class BlockData
 
         if (!Directory.Exists(Application.dataPath + "/Mods"))
             Directory.CreateDirectory(Application.dataPath + "/Mods");
+
 
         IniFile Blocks_INI = new IniFile("/Mods/Blocks.ini");
         if (Blocks_INI.KeyExists("TileSize"))

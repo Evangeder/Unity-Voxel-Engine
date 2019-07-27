@@ -4,13 +4,14 @@ using System.Collections;
 public class Modify : MonoBehaviour
 {
 
+    private World_Network worldnetwork;
+
     public GameObject CameraParent;
 
 
     Vector2 rot;
     public GameObject Cam;
     public Material PlaceBlockMat;
-    float textureval = 0.25f;
 
     public GameObject PlaceBlockGO;
     public GameObject HandGO;
@@ -37,8 +38,21 @@ public class Modify : MonoBehaviour
 
     float timer;
 
+    void Awake()
+    {
+        Minimap = GameObject.Find("Minimap");
+        BuildModeInfo = GameObject.Find("BuildModeInfo").GetComponent<UnityEngine.UI.Text>();
+        world = GameObject.Find("World").GetComponent<World>();
+        SelectionVisualisationGO = GameObject.Find("Selection");
+        BuildModeCanvas = GameObject.Find("BuildMode UI");
+        Minimap.SetActive(false);
+        SelectionVisualisationGO.SetActive(false);
+    }
+
     void Start()
     {
+        worldnetwork = GameObject.Find("World").GetComponent<World_Network>();
+
         IniFile Screen_INI = new IniFile("/Mods/Screen.ini");
         if (Screen_INI.KeyExists("Resolution")) {
             string[] temp = Screen_INI.Read("Resolution").Split('x');
