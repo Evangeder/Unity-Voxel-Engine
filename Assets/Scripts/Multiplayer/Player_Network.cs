@@ -5,11 +5,13 @@ using BeardedManStudios.Forge.Networking.Generated;
 using BeardedManStudios.Forge.Networking.Unity;
 using BeardedManStudios.Forge.Networking;
 using UnityEngine.SceneManagement;
+using Unity.Mathematics;
 
 public class Player_Network : Player_NetworkingBehavior
 {
     [SerializeField] GameObject LocalPlayerObject;
     [SerializeField] GameObject NetworkPlayerObject;
+    World world;
 
     protected override void NetworkStart()
     {
@@ -25,6 +27,11 @@ public class Player_Network : Player_NetworkingBehavior
         }
 
         networkObject.onDestroy += OnDestroyEvent;
+    }
+
+    public void Awake()
+    {
+        world = GameObject.Find("World").GetComponent<World>();
     }
 
     private void OnDestroyEvent(NetWorker sender)
@@ -61,6 +68,7 @@ public class Player_Network : Player_NetworkingBehavior
 
         // If we are the owner of the object we should send the new position
         // and rotation across the network for receivers to move to in the above code
+
         networkObject.Position = transform.position;
 
         // Note: Forge Networking takes care of only sending the delta, so there

@@ -47,8 +47,7 @@ public class Clouds : MonoBehaviour
         CloudDensity = world.CloudDensity;
         CloudDensity2 = world.CloudDensity2;
         HeightDivision = world.HeightDivision;
-
-        //StartCoroutine("CloudMotionEnumerator");
+        GenerateAndRenderClouds();
     }
 
     // Update is called once per frame
@@ -154,8 +153,8 @@ public class Clouds : MonoBehaviour
     {
         if (Clouds_JobHandle.IsCompleted && !verts.IsCreated)
         {
-            verts = new NativeList<Vector3>(Allocator.TempJob);
-            tris = new NativeList<int>(Allocator.TempJob);
+            verts = new NativeList<Vector3>(Allocator.Persistent);
+            tris = new NativeList<int>(Allocator.Persistent);
 
             // Marching cubes tables
             NativeArray<int> T_CubeEdgeFlags = new NativeArray<int>(MarchingCubesTables.CubeEdgeFlags.Length, Allocator.TempJob);

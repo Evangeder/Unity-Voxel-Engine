@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shader Graphs_Spells_Fire_Ball_Projectile_Main
+  m_Shader: {fileID: -6465566751694194690, guid: 55e1a3f939353a64ca0b2526e57c408b,
+    type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 1
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap:
+    MotionVector: User
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - Texture2D_16E2DD7E:
+        m_Texture: {fileID: 2800000, guid: 2e253b5d197bb7943937fb61fac8ccc9, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - Vector1_16AE4354: 0.69
+    - Vector1_21DAADBE: 0
+    - Vector1_308A5F1: 5
+    - Vector1_3634DD9: 2.2
+    - Vector1_3D6058F8: 0.09
+    - Vector1_4B8E1D6A: 0.11
+    - Vector1_AC468208: 6
+    - Vector1_B5B283DF: 0
+    - Vector1_CEC113C1: 74.2
+    - Vector1_D31E0B58: 0.2
+    - Vector1_F72FABBE: 7.95
+    - _AlphaClip: 0
+    m_Colors:
+    - Color_6E6E6E8F: {r: 1, g: 0, b: 0, a: 1}
+    - Color_AF9E3FE8: {r: 2.9960785, g: 1.9921569, b: 0, a: 1}
+    - Vector2_649CE7FB: {r: 0.3, g: 1, b: 0, a: 0}
+    - Vector2_B2433C95: {r: 1, g: 0, b: 0, a: 0}
+    - Vector2_D08F951B: {r: 0.2, g: 0.2, b: 0, a: 0}
+    - Vector3_2057E670: {r: 0.2, g: 0.5, b: 0, a: 0}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}

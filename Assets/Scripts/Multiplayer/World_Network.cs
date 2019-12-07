@@ -5,11 +5,12 @@ using BeardedManStudios.Forge.Networking.Generated;
 using BeardedManStudios.Forge.Networking.Unity;
 using BeardedManStudios.Forge.Networking;
 using UnityEngine.SceneManagement;
+using System;
+using Unity.Collections;
 
 public class World_Network : WorldNetworkingBehavior
 {
     World world;
-
 
     protected override void NetworkStart()
     {
@@ -48,6 +49,24 @@ public class World_Network : WorldNetworkingBehavior
         networkObject.SendRpc(RPC_BLOCK_INIT, Receivers.OthersBuffered,
             BlockData.byID.ObjectToByteArray(),
             BlockData.BlockNames.ObjectToByteArray());
+
+        if (Mods.LoadedMapgens.Count > 0)
+        {
+            Debug.Log("Found custom mapgen");
+            world.worldGen = Activator.CreateInstance(Mods.LoadedMapgens[0]);
+        }
+        else
+        {
+            Debug.Log("Using default mapgen");
+            world.worldGen = new WorldGen();
+        }
+
+        world.worldGen.PrepareBlockInfo();
+        StartCoroutine(world.ExecuteWorldgenQueue());
+
+        if (Mods.LoadedMapgens.Count > 0)
+            networkObject.SendRpc(RPC_SEND_MAPGEN, Receivers.OthersBuffered, System.Text.Encoding.UTF8.GetBytes(Mods.LoadedMapgens_Code[0]), System.Text.Encoding.UTF8.GetBytes(Mods.LoadedMapgens_Name[0]));
+
         networkObject.SendRpc(RPC_CREATE_WORLD, Receivers.AllBuffered, new Vector2(world.WorldSeed.x, world.WorldSeed.y), (byte)world.WorldSize.x, (byte)world.WorldSize.y, (byte)world.WorldSize.z);
     }
 
@@ -107,7 +126,7 @@ public class World_Network : WorldNetworkingBehavior
 
         byte[] receivedBytes = args.GetNext<byte[]>();
         BlockData.byID.Clear();
-        BlockData.byID = receivedBytes.ByteArrayToObject<List<Block>>();
+        BlockData.byID = receivedBytes.ByteArrayToObject<List<BlockTypes>>();
         receivedBytes = args.GetNext<byte[]>();
         BlockData.BlockNames = receivedBytes.ByteArrayToObject<string[]>();
     }
@@ -145,13 +164,35 @@ public class World_Network : WorldNetworkingBehavior
         throw new System.NotImplementedException();
     }
 
-    public void SetBlock_Caller(int x, int y, int z, Block block)
+    public void SetBlock_Caller(int x, int y, int z, BlockMetadata metadata)
     {
-        networkObject.SendRpc(RPC_SET_BLOCK, Receivers.AllBuffered, x, y, z, block.ObjectToByteArray());
+        networkObject.SendRpc(RPC_SET_BLOCK, Receivers.AllBuffered, x, y, z, metadata.ObjectToByteArray());
     }
 
     public override void SetBlock(RpcArgs args)
     {
-        world.SetBlock(args.GetNext<int>(), args.GetNext<int>(), args.GetNext<int>(), args.GetNext<byte[]>().ByteArrayToObject<Block>(), true);
+        world.SetBlock(args.GetNext<int>(), args.GetNext<int>(), args.GetNext<int>(), args.GetNext<byte[]>().ByteArrayToObject<BlockMetadata>(), true);
+    }
+
+    public override void SendMapgen(RpcArgs args)
+    {
+        byte[] MapgenCode = args.GetNext<byte[]>();
+        byte[] MapgenName = args.GetNext<byte[]>();
+        string sMapgenName = System.Text.Encoding.UTF8.GetString(MapgenName, 0, MapgenName.Length);
+
+        Mods.CompileMod(System.Text.Encoding.UTF8.GetString(MapgenCode, 0, MapgenCode.Length), sMapgenName);
+        world.worldGen = Activator.CreateInstance(Mods.GetMapgen(sMapgenName));
+        world.worldGen.PrepareBlockInfo();
+        StartCoroutine(world.ExecuteWorldgenQueue());
+    }
+
+    public override void GetChunk(RpcArgs args)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override void SendBroadcast(RpcArgs args)
+    {
+        throw new System.NotImplementedException();
     }
 }

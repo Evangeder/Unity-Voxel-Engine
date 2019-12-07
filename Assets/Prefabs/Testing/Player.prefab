@@ -487,7 +487,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 311
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -524,9 +524,9 @@ MonoBehaviour:
   clearDepth: 1
   volumeLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 311
   volumeAnchorOverride: {fileID: 0}
-  antialiasing: 0
+  antialiasing: 3
   SMAAQuality: 2
   dithering: 0
   stopNaNs: 0
@@ -545,7 +545,7 @@ MonoBehaviour:
   invertFaceCulling: 0
   probeLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 311
   m_RenderingPathCustomFrameSettings:
     bitDatas:
       data1: 69284255760157
@@ -620,17 +620,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CameraParent: {fileID: 921288512492030217}
   Cam: {fileID: 921288512316805012}
-  PlaceBlockMat: {fileID: 2100000, guid: 8bd2158b7f4f4ef47af142eb71c29b77, type: 2}
+  CanvasObject: {fileID: 0}
   PlaceBlockGO: {fileID: 921288511963311903}
   HandGO: {fileID: 921288513100935113}
   BuildMode_GO: {fileID: 921288512024483058}
   PlayMode_GO: {fileID: 921288511613941212}
-  Minimap: {fileID: 0}
+  Options_GO: {fileID: 0}
+  IngameUI: {fileID: 0}
   BuildModeCanvas: {fileID: 0}
-  world: {fileID: 0}
-  BuildModeInfo: {fileID: 0}
   SelectionVisualisationGO: {fileID: 0}
+  SchemaSelector1: {fileID: 0}
+  SchemaSelector2: {fileID: 0}
+  SchemaSelectorOrigin: {fileID: 0}
   Bomb: {fileID: 5620357620161876422, guid: 49503eb8b59d9c044aa4dc48e2ac8942, type: 3}
+  BuildModeInfo: {fileID: 0}
+  ErrorLogBuildmode: {fileID: 0}
+  PlaceBlockMat: {fileID: 2100000, guid: 8bd2158b7f4f4ef47af142eb71c29b77, type: 2}
+  world: {fileID: 0}
+  attunementAnimations: {fileID: 0}
 --- !u!1 &921288512492030217
 GameObject:
   m_ObjectHideFlags: 0
@@ -643,6 +650,7 @@ GameObject:
   - component: {fileID: 921288512492030219}
   - component: {fileID: 921288512492030216}
   - component: {fileID: 921288512492030221}
+  - component: {fileID: -2307834969300598864}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -710,6 +718,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   LocalPlayerObject: {fileID: 921288512919151306}
   NetworkPlayerObject: {fileID: 921288510971063853}
+--- !u!114 &-2307834969300598864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 921288512492030217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c68148ef47aa58488869988bf056d6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &921288512919151306
 GameObject:
   m_ObjectHideFlags: 0

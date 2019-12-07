@@ -32,7 +32,7 @@ public class BMSLogger : MonoBehaviour, IBMSLogger
 	#endregion
 
 	#region Runtime
-	[RuntimeInitializeOnLoadMethod]
+	//[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
 		if (_instance != null)

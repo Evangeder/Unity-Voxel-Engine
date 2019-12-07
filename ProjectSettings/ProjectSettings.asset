@@ -3,7 +3,7 @@
 --- !u!129 &1
 PlayerSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 17
+  serializedVersion: 18
   productGUID: b5e64e899a159834b9d86a5f15f1120c
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
@@ -20,7 +20,7 @@ PlayerSettings:
   m_ShowUnitySplashScreen: 1
   m_ShowUnitySplashLogo: 1
   m_SplashScreenOverlayOpacity: 1
-  m_SplashScreenAnimation: 0
+  m_SplashScreenAnimation: 1
   m_SplashScreenLogoStyle: 1
   m_SplashScreenDrawMode: 0
   m_SplashScreenBackgroundAnimationZoom: 1
@@ -52,8 +52,8 @@ PlayerSettings:
   m_StackTraceTypes: 010000000100000001000000010000000100000001000000
   iosShowActivityIndicatorOnLoading: -1
   androidShowActivityIndicatorOnLoading: -1
-  iosAppInBackgroundBehavior: 0
   displayResolutionDialog: 0
+  iosUseCustomAppBackgroundBehavior: 0
   iosAllowHTTPDownload: 1
   allowedAutorotateToPortrait: 1
   allowedAutorotateToPortraitUpsideDown: 1
@@ -80,6 +80,7 @@ PlayerSettings:
   usePlayerLog: 1
   bakeCollisionMeshes: 0
   forceSingleInstance: 0
+  useFlipModelSwapchain: 1
   resizableWindow: 0
   useMacAppStoreValidation: 0
   macAppStoreCategory: public.app-category.games
@@ -150,6 +151,8 @@ PlayerSettings:
       sharedDepthBuffer: 1
       dashSupport: 1
       lowOverheadMode: 0
+      protectedContext: 0
+      v2Signing: 0
     enable360StereoCapture: 0
   isWsaHolographicRemotingEnabled: 0
   protectGraphicsMemory: 0
@@ -563,7 +566,8 @@ PlayerSettings:
   platformArchitecture: {}
   scriptingBackend:
     Standalone: 0
-  il2cppCompilerConfiguration: {}
+  il2cppCompilerConfiguration:
+    Standalone: 1
   managedStrippingLevel:
     Standalone: 1
   incrementalIl2cppBuild: {}

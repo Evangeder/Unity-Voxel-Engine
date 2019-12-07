@@ -4,16 +4,19 @@ using UnityEngine;
 
 namespace BeardedManStudios.Forge.Networking.Generated
 {
-	[GeneratedRPC("{\"types\":[[\"byte\"][\"byte[]\", \"float\", \"float\"][\"byte[]\", \"byte[]\"][\"Vector2\", \"byte\", \"byte\", \"byte\"][\"int\", \"int\", \"int\", \"byte[]\"][\"int\", \"int\", \"int\", \"byte[]\"]]")]
-	[GeneratedRPCVariableNames("{\"types\":[[\"Byte\"][\"TexturePack\", \"BlockTileSize\", \"TextureSize\"][\"BlockData\", \"BlockNames\"][\"Seed\", \"SizeX\", \"SizeY\", \"SizeZ\"][\"X\", \"Y\", \"Z\", \"Block\"][\"X\", \"Y\", \"Z\", \"Chunk\"]]")]
+	[GeneratedRPC("{\"types\":[[\"byte\"][\"byte[]\", \"float\", \"float\"][\"byte[]\", \"byte[]\"][\"byte[]\", \"byte[]\"][\"Vector2\", \"byte\", \"byte\", \"byte\"][\"int\", \"int\", \"int\", \"byte[]\"][\"int\", \"int\", \"int\"][\"int\", \"int\", \"int\", \"byte[]\"][\"byte[]\"]]")]
+	[GeneratedRPCVariableNames("{\"types\":[[\"Byte\"][\"TexturePack\", \"BlockTileSize\", \"TextureSize\"][\"MapgenCode\", \"MapgenName\"][\"BlockData\", \"BlockNames\"][\"Seed\", \"SizeX\", \"SizeY\", \"SizeZ\"][\"X\", \"Y\", \"Z\", \"Block\"][\"\", \"\", \"\"][\"X\", \"Y\", \"Z\", \"Chunk\"][\"\"]]")]
 	public abstract partial class WorldNetworkingBehavior : NetworkBehavior
 	{
 		public const byte RPC_HANDSHAKE = 0 + 5;
 		public const byte RPC_SEND_TEXTURE_PACK = 1 + 5;
-		public const byte RPC_BLOCK_INIT = 2 + 5;
-		public const byte RPC_CREATE_WORLD = 3 + 5;
-		public const byte RPC_SET_BLOCK = 4 + 5;
-		public const byte RPC_SEND_CHUNK = 5 + 5;
+		public const byte RPC_SEND_MAPGEN = 2 + 5;
+		public const byte RPC_BLOCK_INIT = 3 + 5;
+		public const byte RPC_CREATE_WORLD = 4 + 5;
+		public const byte RPC_SET_BLOCK = 5 + 5;
+		public const byte RPC_GET_CHUNK = 6 + 5;
+		public const byte RPC_SEND_CHUNK = 7 + 5;
+		public const byte RPC_SEND_BROADCAST = 8 + 5;
 		
 		public WorldNetworkingNetworkObject networkObject = null;
 
@@ -29,10 +32,13 @@ namespace BeardedManStudios.Forge.Networking.Generated
 			base.SetupHelperRpcs(networkObject);
 			networkObject.RegisterRpc("Handshake", Handshake, typeof(byte));
 			networkObject.RegisterRpc("SendTexturePack", SendTexturePack, typeof(byte[]), typeof(float), typeof(float));
+			networkObject.RegisterRpc("SendMapgen", SendMapgen, typeof(byte[]), typeof(byte[]));
 			networkObject.RegisterRpc("BlockInit", BlockInit, typeof(byte[]), typeof(byte[]));
 			networkObject.RegisterRpc("CreateWorld", CreateWorld, typeof(Vector2), typeof(byte), typeof(byte), typeof(byte));
 			networkObject.RegisterRpc("SetBlock", SetBlock, typeof(int), typeof(int), typeof(int), typeof(byte[]));
+			networkObject.RegisterRpc("GetChunk", GetChunk, typeof(int), typeof(int), typeof(int));
 			networkObject.RegisterRpc("SendChunk", SendChunk, typeof(int), typeof(int), typeof(int), typeof(byte[]));
+			networkObject.RegisterRpc("SendBroadcast", SendBroadcast, typeof(byte[]));
 
 			networkObject.onDestroy += DestroyGameObject;
 
@@ -123,6 +129,12 @@ namespace BeardedManStudios.Forge.Networking.Generated
 		public abstract void SendTexturePack(RpcArgs args);
 		/// <summary>
 		/// Arguments:
+		/// byte[] MapgenCode
+		/// byte[] MapgenName
+		/// </summary>
+		public abstract void SendMapgen(RpcArgs args);
+		/// <summary>
+		/// Arguments:
 		/// byte[] BlockData
 		/// byte[] BlockNames
 		/// </summary>
@@ -145,12 +157,24 @@ namespace BeardedManStudios.Forge.Networking.Generated
 		public abstract void SetBlock(RpcArgs args);
 		/// <summary>
 		/// Arguments:
+		/// int 
+		/// int 
+		/// int
+		/// </summary>
+		public abstract void GetChunk(RpcArgs args);
+		/// <summary>
+		/// Arguments:
 		/// int X
 		/// int Y
 		/// int Z
 		/// byte[] Chunk
 		/// </summary>
 		public abstract void SendChunk(RpcArgs args);
+		/// <summary>
+		/// Arguments:
+		/// byte[]
+		/// </summary>
+		public abstract void SendBroadcast(RpcArgs args);
 
 		// DO NOT TOUCH, THIS GETS GENERATED PLEASE EXTEND THIS CLASS IF YOU WISH TO HAVE CUSTOM CODE ADDITIONS
 	}

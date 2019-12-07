@@ -108,7 +108,7 @@ Material:
     - _UnlitColorMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 0.0625, y: 0.0625}
-        m_Offset: {x: 0.0625, y: 0.9375}
+        m_Offset: {x: 0.125, y: 0.6875}
     m_Floats:
     - _AORemapMax: 1
     - _AORemapMin: 0
@@ -223,6 +223,7 @@ Material:
     - _ThicknessMultiplier: 1
     - _TransmissionEnable: 1
     - _TransparentBackfaceEnable: 0
+    - _TransparentCullMode: 2
     - _TransparentDepthPostpassEnable: 0
     - _TransparentDepthPrepassEnable: 0
     - _TransparentSortPriority: 0
@@ -235,6 +236,7 @@ Material:
     - _ZTestDepthEqualForOpaque: 3
     - _ZTestGBuffer: 4
     - _ZTestModeDistortion: 4
+    - _ZTestTransparent: 4
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
