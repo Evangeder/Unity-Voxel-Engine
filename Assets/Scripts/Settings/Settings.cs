@@ -6,8 +6,8 @@ using UnityEngine.UI;
 public static class PlayerSettings
 {
     // WORLD CHUNKS
-    public static int Chunk_LoadingSpeed = 30; // 30 default
-    public static int Chunk_DrawDistance = 30; // 30 default
+    public static int Chunk_LoadingSpeed = 101; // 30 default
+    public static int Chunk_DrawDistance = 6; // 30 default
 }
 
 public class Settings : MonoBehaviour

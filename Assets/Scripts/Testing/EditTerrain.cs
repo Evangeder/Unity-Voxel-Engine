@@ -62,7 +62,7 @@ public static class EditTerrain
     {
         Chunk chunk = hit.collider.GetComponent<Chunk>();
         if (chunk == null)
-            return new BlockMetadata { MarchedValue = 0, Marched = false, ID = 0 };
+            return new BlockMetadata { MarchedValue = 0, Switches = BlockSwitches.None, ID = 0 };
 
         int3 pos = GetBlockPos(hit, adjacent);
 

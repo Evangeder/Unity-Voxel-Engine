@@ -65,6 +65,19 @@ public static class SpiralCoords
         }
     }
 
+    public static IEnumerable<int3> GenerateOutTo3D(int radius)
+    {
+        //TODO trap negative radius.  0 is ok.
+
+        foreach (int r in Enumerable.Range(0, radius + 1))
+        {
+            foreach (int3 coord in GenerateRing3D(r))
+            {
+                yield return coord;
+            }
+        }
+    }
+
     public static IEnumerable<int2> GenerateRing(int radius)
     {
         //TODO trap negative radius.  0 is ok.
@@ -101,6 +114,45 @@ public static class SpiralCoords
         {
             currentPoint.y += 1;
             yield return new int2(currentPoint.x, currentPoint.y);
+        }
+    }
+
+    public static IEnumerable<int3> GenerateRing3D(int radius)
+    {
+        //TODO trap negative radius.  0 is ok.
+
+        int3 currentPoint = new int3(radius, 0, 0);
+        yield return new int3(currentPoint.x, 0, currentPoint.y);
+
+        //move up while we can
+        while (currentPoint.y < radius)
+        {
+            currentPoint.y += 1;
+            yield return new int3(currentPoint.x, 0, currentPoint.y);
+        }
+        //move left while we can
+        while (-radius < currentPoint.x)
+        {
+            currentPoint.x -= 1;
+            yield return new int3(currentPoint.x, 0, currentPoint.y);
+        }
+        //move down while we can
+        while (-radius < currentPoint.y)
+        {
+            currentPoint.y -= 1;
+            yield return new int3(currentPoint.x, 0, currentPoint.y);
+        }
+        //move right while we can
+        while (currentPoint.x < radius)
+        {
+            currentPoint.x += 1;
+            yield return new int3(currentPoint.x, 0, currentPoint.y);
+        }
+        //move up while we can
+        while (currentPoint.y < -1)
+        {
+            currentPoint.y += 1;
+            yield return new int3(currentPoint.x, 0, currentPoint.y);
         }
     }
 

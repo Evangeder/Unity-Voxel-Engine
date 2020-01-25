@@ -3,7 +3,10 @@ using CielaSpike;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -13,12 +16,14 @@ using UnityEngine;
 public class World : MonoBehaviour
 {
     public Dictionary<int3, Chunk> chunks = new Dictionary<int3, Chunk>();
-    public List<Chunk> ChunkUpdateQueue = new List<Chunk>();
+    public Queue<Chunk> ChunkUpdateQueue = new Queue<Chunk>();
 
     public Clouds[] clouds;
 
     public GameObject Prefab_Chunk;
     public GameObject Prefab_Clouds;
+
+    [HideInInspector] public static Thread mainThread = Thread.CurrentThread;
 
     // World name (redundant, but meh)
     [Header("Main")]
@@ -34,7 +39,7 @@ public class World : MonoBehaviour
     [HideInInspector] public ushort GeneratedChunks = 0;
 
     // World generator class
-    [HideInInspector] public dynamic worldGen;
+    [HideInInspector] public WorldGen worldGen;
 
     //TEMP - shouldnt be here
     public GameObject GUI_MapLoadingOverlay;
@@ -53,6 +58,12 @@ public class World : MonoBehaviour
     [Range(1f, 1000f)] public float CloudDensity2 = 9f;
     [Range(1f, 1000f)] public float HeightDivision = 1000f;
     [Range(2, 10)] public int CloudUpdateSpeed = 2;
+
+    //[HideInInspector] public ChunkLoading chunkLoader;
+    
+    //debug
+    public bool Loaded = false;
+    public UnityEngine.UI.Text debugCMcount;
 
     //NETWORKING
     private World_Network Networking;
@@ -73,6 +84,7 @@ public class World : MonoBehaviour
 
     void OnDestroy()
     {
+        if (BlockData.NativeByID.IsCreated && !MainMenuWorld) BlockData.NativeByID.Dispose();
         StopCoroutine(ExecuteWorldgenQueue());
     }
 
@@ -85,18 +97,74 @@ public class World : MonoBehaviour
 
         GUI_MapLoadingOverlay.SetActive(true);
 
-        if (chunks.Count() > 0)
-        {
-            foreach (KeyValuePair<int3, Chunk> chunk in chunks)
-                Destroy(chunk.Value.gameObject);
+        MapLoadInfo = "Preparing memory...";
+        int GeneratedObjects = 0;
+        ChunkManager.Init(Prefab_Chunk, this,10000, true);
+        //for (int i = 0; i < 1000; i++)
+        //{
+        //    if (ChunkManager.Push())
+        //        GeneratedObjects++;
+        //    else 
+        //        break;
+//
+        //    if (GeneratedObjects % 64 == 0) yield return null;
+        //}
+        //Debug.Log($"Created {GeneratedObjects} GameObjects.");
 
-            foreach (Clouds cld in clouds)
-                Destroy(cld.gameObject);
-
-            chunks.Clear();
-            clouds = new Clouds[0];
-            Debug.Log("Cleared old chunks and clouds.");
-        }
+        //MapLoadInfo = "Waiting for chunk manager...";
+        //while (chunkLoader == null) yield return null;
+        //
+        //MapLoadInfo = "Calculating render queue...";
+        //List<int2> temp = new List<int2>();
+        //for (int x = -20; x < 20; x++)
+        //for (int y = -20; y < 20; y++)
+        //    temp.Add(new int2(x, y));
+//
+        //List<int2> recalculatedDrawingArray = new List<int2>();
+        //float tempdist, distance;
+        //int V;
+        //StringBuilder sb = new StringBuilder();
+        //sb.Append("[HideInInspector] public int2[] drawingArray =\n");
+        //sb.Append("{\n");
+        //int testtttt = 0;
+        //for (int i = 0; i < temp.Count; i++)
+        //{
+        //    distance = float.MaxValue;
+        //    V = -1;
+        //    for (int v = 0; v < temp.Count; v++)
+        //    {
+        //        tempdist = Vector2.Distance(new Vector2(0, 0), new Vector2(temp[v].x, temp[v].y));
+        //        if (tempdist < distance && !recalculatedDrawingArray.Contains(temp[v]) && Mathf.FloorToInt(distance) <= 20)
+        //        {
+        //            distance = tempdist;
+        //            V = v;
+        //        }
+        //    }
+//
+        //    if (V > -1)
+        //    {
+        //        recalculatedDrawingArray.Add(temp[V]);
+        //        sb.Append($"new int2({temp[V].x.ToString()}, {temp[V].y.ToString()}), ");
+        //        testtttt++;
+        //    }
+        //    if (testtttt % 4 == 0) sb.Append("\n");
+        //    MapLoadInfo = $"Calculating render queue... {i}/{temp.Count}";
+        //    yield return null;
+        //}
+        //sb.Append("};");
+        //StreamWriter sw = new StreamWriter(Path.Combine(Application.dataPath, "Mods", "outputstring.txt"), false);
+        //sw.Write(sb.ToString());
+        //sw.Flush();
+        //sw.Close();
+        //sb.Clear();
+        //chunkLoader.drawingArray = recalculatedDrawingArray.ToArray();
+        
+        MapLoadInfo = "Rendering world...";
+        //chunkLoader.Run();
+        
+        yield return new WaitForSeconds(3);
+        while(!BlockData.SoundsLoaded) yield return new WaitForEndOfFrame();
+        Loaded = true;
         /*
         int delay = 0;
         
@@ -265,8 +333,8 @@ public class World : MonoBehaviour
     public IEnumerator ExecuteWorldgenQueue()
     {
         int Counter = 6;
-        if (Mods.LoadedMapgens.Count == 0) Counter = 12;
-
+        if (Mods.LoadedMapgens.Count == 0) Counter = 32;
+        Chunk ch;
         while (true)
         {
             if (worldGen != null)
@@ -274,9 +342,13 @@ public class World : MonoBehaviour
                 {
                     for (int i = 0; i < (worldGen.ChunkQueue.Count > Counter ? Counter : worldGen.ChunkQueue.Count); i++)
                     {
-                        StartCoroutine(worldGen.GenerateChunk(worldGen.ChunkQueue[0]));
-                        worldGen.ChunkQueue.RemoveAt(0);
-                        if (Counter < 12) yield return null;
+                        ch = worldGen.ChunkQueue.Peek();
+                        if (ch != null && CheckChunk(ch.pos.x, ch.pos.y, ch.pos.z) && !ch.isQueuedForDeletion &&
+                            !ch.isEmpty)
+                            StartCoroutine(worldGen.GenerateChunk(worldGen.ChunkQueue.Dequeue()));
+                        else
+                            worldGen.ChunkQueue.Dequeue();
+                        //if (Counter < 12) yield return null;
                     }
                 }
             yield return null;
@@ -287,6 +359,7 @@ public class World : MonoBehaviour
 
     public void Update()
     {
+        debugCMcount.text = $"Buffer data:\nType: {ChunkManager.GetType}\nAllocated space: {ChunkManager.Length}/{ChunkManager.Max}\nCurrently stored: {ChunkManager.Count}\nTotal chunks allocated: {ChunkManager.ObjectCount}";
         if (GUI_MapLoadingText != null && GUI_MapLoadingText.text != MapLoadInfo) GUI_MapLoadingText.text = MapLoadInfo;
         if (GenerateClouds && AnimateClouds && !isAnimating) StartCoroutine(UpdateClouds());
     }
@@ -295,12 +368,14 @@ public class World : MonoBehaviour
 
     public IEnumerator UpdateChunkQueue()
     {
+        Chunk ch;
         while (true)
         {
             if (ChunkUpdateQueue.Count > 0)
             {
-                ChunkUpdateQueue[0].UpdateChunk(ChunkUpdateMode.ForceSingle);
-                ChunkUpdateQueue.RemoveAt(0);
+                ch = ChunkUpdateQueue.Peek();
+                if (ch != null && CheckChunk(ch.pos.x, ch.pos.y, ch.pos.z))
+                    ChunkUpdateQueue.Dequeue().GenerateChunk();
             }
             yield return new WaitForFixedUpdate();
         }
@@ -308,25 +383,27 @@ public class World : MonoBehaviour
 
     public void AddToChunkUpdateQueue(Chunk chunk)
     {
-        if (!ChunkUpdateQueue.Contains(chunk))
-            ChunkUpdateQueue.Add(chunk);
+        if (!ChunkUpdateQueue.Contains(chunk) && chunk != null)
+            ChunkUpdateQueue.Enqueue(chunk);
+    }
+
+    public Chunk CreateChunk(int3 position, bool generate = true)
+    {
+        return CreateChunk(position.x, position.y, position.x, generate);
     }
 
     public Chunk CreateChunk(int x, int y, int z, bool generate = true)
     {
         int3 worldPos = new int3(x, y, z);
-        //Safety check
-        Chunk newChunk = GetChunk(x, y, z);
-        if (newChunk != null) return null;
-
-        //Instantiate the chunk at the coordinates using the chunk prefab
-        GameObject newChunkObject = Instantiate(Prefab_Chunk, new Vector3(x, y, z), Quaternion.Euler(Vector3.zero)) as GameObject;
-        newChunkObject.transform.parent = transform;
-        newChunkObject.name = $"Chunk ({x.ToString()}/{y.ToString()}/{z.ToString()})";
-
-        newChunk = newChunkObject.GetComponent<Chunk>();
-        newChunk.pos = worldPos;
+        if (CheckChunk(x, y, z)) return null;
+        
+        if (ChunkManager.Left == 0) return null;
+        Chunk newChunk = ChunkManager.GetChunk();
         newChunk.world = this;
+        Transform tr = newChunk.transform;
+        tr.name = $"Chunk ({x.ToString()}/{y.ToString()}/{z.ToString()})";
+        tr.position = new Vector3(x, y, z);
+        newChunk.pos = worldPos;
 
         //Add it to the chunks dictionary with the position as the key
         chunks.Add(worldPos, newChunk);
@@ -338,26 +415,37 @@ public class World : MonoBehaviour
 
     public void DestroyChunk(int x, int y, int z)
     {
-        Chunk chunk = null;
-        if (chunks.TryGetValue(new int3(x, y, z), out chunk))
-        {
-            //Serialization.SaveChunk(chunk);
-            Destroy(chunk.gameObject);
-            chunks.Remove(new int3(x, y, z));
-        }
+        Chunk chunk = GetChunk(x, y, z);
+        //Serialization.SaveChunk(chunk);
+        chunks.Remove(chunk.pos);
+        if (!chunk.isQueuedForDeletion && !chunk.isEmpty)
+            chunk.QueueDispose();
     }
 
     public Chunk GetChunk(int x, int y, int z)
     {
         int3 pos = new int3();
         float multiple = BlockData.ChunkSize;
-        pos.x = (int)System.Math.Floor(x / multiple) * BlockData.ChunkSize;
-        pos.y = (int)System.Math.Floor(y / multiple) * BlockData.ChunkSize;
-        pos.z = (int)System.Math.Floor(z / multiple) * BlockData.ChunkSize;
+
+        pos.x = Mathf.FloorToInt(x / multiple) * BlockData.ChunkSize;
+        pos.y = Mathf.FloorToInt(y / multiple) * BlockData.ChunkSize;
+        pos.z = Mathf.FloorToInt(z / multiple) * BlockData.ChunkSize;
 
         chunks.TryGetValue(pos, out Chunk containerChunk);
 
         return containerChunk;
+    }
+
+    public bool CheckChunk(int x, int y, int z)
+    {
+        int3 pos = new int3();
+        float multiple = BlockData.ChunkSize;
+
+        pos.x = Mathf.FloorToInt(x / multiple) * BlockData.ChunkSize;
+        pos.y = Mathf.FloorToInt(y / multiple) * BlockData.ChunkSize;
+        pos.z = Mathf.FloorToInt(z / multiple) * BlockData.ChunkSize;
+
+        return chunks.TryGetValue(pos, out _);
     }
 
     public Chunk GetChunkByChunkCoordinates(int x, int y, int z)
@@ -375,7 +463,7 @@ public class World : MonoBehaviour
     {
         Chunk containerChunk = GetChunk(x, y, z);
 
-        if (containerChunk != null)
+        if (CheckChunk(x, y, z))
         {
             BlockMetadata block = containerChunk.GetBlock(
                 x - containerChunk.pos.x,
@@ -386,7 +474,7 @@ public class World : MonoBehaviour
         }
         else
         {
-            return new BlockMetadata { ID = 0, Marched = false, MarchedValue = 0 };
+            return new BlockMetadata { ID = 0, Switches = BlockSwitches.Marched, MarchedValue = 0 };
         }
 
     }
@@ -407,43 +495,26 @@ public class World : MonoBehaviour
         {
             chunk.SetBlock(x - chunk.pos.x, y - chunk.pos.y, z - chunk.pos.z, blockMetadata, FromNetwork, UpdateMode);
 
-            if (UpdateMode == BlockUpdateMode.ForceUpdate)
-                chunk.UpdateChunk(ChunkUpdateMode.ForceSingle);
-            else if (UpdateMode == BlockUpdateMode.Queue)
-                AddToChunkUpdateQueue(chunk);
+            //if (UpdateMode == BlockUpdateMode.ForceUpdate)
+            //    chunk.UpdateChunk(ChunkUpdateMode.ForceSingle);
+            //else if (UpdateMode == BlockUpdateMode.Queue)
+            //    AddToChunkUpdateQueue(chunk);
 
-            for (int ix = -1; ix < 2; ix++)
-            {
-                for (int iy = -1; iy < 2; iy++)
-                {
-                    for (int iz = -1; iz < 2; iz++)
-                    {
-                        Chunk tempchunk = GetChunk(x + ix, y + iy, z + iz);
-                        if (tempchunk != chunk && tempchunk != null)
-                            if (UpdateMode == BlockUpdateMode.Queue)
-                                AddToChunkUpdateQueue(chunk);
-                            else
-                                tempchunk.UpdateChunk(ChunkUpdateMode.ForceSingle);
-                    }
-                }
-            }
-
-            UpdateIfEqual(x - chunk.pos.x, 0, new int3(x - 1, y, z));
-            UpdateIfEqual(x - chunk.pos.x, BlockData.ChunkSize - 1, new int3(x + 1, y, z));
-            UpdateIfEqual(y - chunk.pos.y, 0, new int3(x, y - 1, z));
-            UpdateIfEqual(y - chunk.pos.y, BlockData.ChunkSize - 1, new int3(x, y + 1, z));
-            UpdateIfEqual(z - chunk.pos.z, 0, new int3(x, y, z - 1));
-            UpdateIfEqual(z - chunk.pos.z, BlockData.ChunkSize - 1, new int3(x, y, z + 1));
-        }
-    }
-
-    void UpdateIfEqual(int value1, int value2, int3 pos)
-    {
-        if (value1 == value2)
-        {
-            Chunk chunk = GetChunk(pos.x, pos.y, pos.z);
-            if (chunk != null)
-                chunk.UpdateChunk(ChunkUpdateMode.ForceSingle);
+            //for (int ix = -1; ix < 2; ix++)
+            //{
+            //    for (int iy = -1; iy < 2; iy++)
+            //    {
+            //        for (int iz = -1; iz < 2; iz++)
+            //        {
+            //            Chunk tempchunk = GetChunk(x + ix, y + iy, z + iz);
+            //            if (tempchunk != chunk && tempchunk != null)
+            //                if (UpdateMode == BlockUpdateMode.Queue)
+            //                    AddToChunkUpdateQueue(chunk);
+            //                else
+            //                    tempchunk.UpdateChunk(ChunkUpdateMode.ForceSingle);
+            //        }
+            //    }
+            //}
         }
     }
     #endregion

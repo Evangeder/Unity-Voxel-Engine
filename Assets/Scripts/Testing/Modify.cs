@@ -3,8 +3,11 @@ using System.Collections;
 using System.IO;
 using Unity.Mathematics;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using Random = UnityEngine.Random;
 
+[RequireComponent(typeof(AudioSource))]
 public class Modify : MonoBehaviour
 {
 
@@ -32,6 +35,8 @@ public class Modify : MonoBehaviour
     public UnityEngine.UI.Text ErrorLogBuildmode;
     public Material PlaceBlockMat;
 
+    public AudioSource _audioSource;
+    
     public World world;
 
     public AttunementAnimations attunementAnimations;
@@ -43,7 +48,8 @@ public class Modify : MonoBehaviour
     int buildmode = 0;
     int buildmode2brushsize = 0;
 
-    float timer;
+    float timer, doubleTapSpacebarTimer, doubleTapWTimer, flyspeed = 10f;
+    bool flymode = true, Loaded = false;
 
     bool nouimode = false;
 
@@ -73,6 +79,7 @@ public class Modify : MonoBehaviour
         SchemaSelectorOrigin.SetActive(false);
         CanvasObject = GameObject.Find("Canvas");
         CanvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        _audioSource = GetComponent<AudioSource>();
     }
 
     void Start()
@@ -88,8 +95,8 @@ public class Modify : MonoBehaviour
             Screen_INI.Write("Fullscreen", "False");
             Screen.SetResolution(854, 480, false);
         }
-        //Application.targetFrameRate = 600;
-        //QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 600;
+        QualitySettings.vSyncCount = 1;
         //Cursor.lockState = CursorLockMode.Locked;
         //Cursor.visible = false;
     }
@@ -97,7 +104,17 @@ public class Modify : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (world.Loaded && !Loaded)
+        {
+            Loaded = true;
+            flymode = false;
+            CameraParent.GetComponent<Rigidbody>().isKinematic = false;
+            CameraParent.GetComponent<Rigidbody>().useGravity = true;
+        }
+        
         if (timer > 0f) timer -= Time.deltaTime * 10f;
+        doubleTapSpacebarTimer += Time.deltaTime;
+        doubleTapWTimer += Time.deltaTime;
         if (!Options_GO.activeSelf && dontfocus) dontfocus = false;
 
         if (Input.GetKeyDown(KeyCode.O))
@@ -241,10 +258,14 @@ public class Modify : MonoBehaviour
                                 if (Input.GetKey(KeyCode.LeftShift))
                                 {
                                     BlockMetadata WorkerBlock = new BlockMetadata(BlockID, true, 254);
+                                    if (BlockData.BlockSounds[BlockID].Count > 0)
+                                        _audioSource.PlayOneShot(BlockData.BlockSounds[BlockID][Random.Range(0, BlockData.BlockSounds[BlockID].Count - 1)]);
                                     EditTerrain.SetBlock(hit, WorkerBlock, false, false);
                                 }
                                 else
                                 {
+                                    if (BlockData.BlockSounds[BlockID].Count > 0)
+                                        _audioSource.PlayOneShot(BlockData.BlockSounds[BlockID][Random.Range(0, BlockData.BlockSounds[BlockID].Count - 1)]);
                                     EditTerrain.SetBlock(hit, new BlockMetadata(BlockID, false, 0), false, false);
                                 }
                             }
@@ -320,7 +341,8 @@ public class Modify : MonoBehaviour
                                 position += (hit.normal * 0.5f);
                                 BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
 
-                                if (WorkerBlock.ID != 0 && WorkerBlock.Marched)
+                                
+                                if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
                                 {
                                     if (WorkerBlock.GetMarchedValue() < 1f)
                                     {
@@ -342,7 +364,7 @@ public class Modify : MonoBehaviour
                         if (Input.GetMouseButton(0) && buildmode == 1 && timer <= 0f)
                         {
                             BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
-                            if (WorkerBlock.ID != 0 && WorkerBlock.Marched)
+                            if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
                             {
                                 if (WorkerBlock.GetMarchedValue() > 0.501f)
                                 {
@@ -368,7 +390,7 @@ public class Modify : MonoBehaviour
                                 Vector3 position = hit.point;
                                 BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
 
-                                if (WorkerBlock.Marched || WorkerBlock.ID == 0)
+                                if ((WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched || WorkerBlock.ID == 0)
                                 {
                                     if (WorkerBlock.GetMarchedValue() < 1f)
                                     {
@@ -425,7 +447,7 @@ public class Modify : MonoBehaviour
                                             float calculatedmarch = 0.15f - x / 50 - y / 50 - z / 50;
                                             if (calculatedmarch < 0.1f) calculatedmarch = 0.1f;
 
-                                            if (WorkerBlock.ID == 0 || WorkerBlock.Marched)
+                                            if (WorkerBlock.ID == 0 || (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
                                             {
 
                                                 if (WorkerBlock.MarchedValue > 0)
@@ -457,7 +479,7 @@ public class Modify : MonoBehaviour
                             }
                             else
                             {
-                                if (WorkerBlock.ID != 0 && WorkerBlock.Marched)
+                                if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
                                 {
                                     if (WorkerBlock.GetMarchedValue() > 0.501f)
                                     {
@@ -486,7 +508,12 @@ public class Modify : MonoBehaviour
                             if (BlockData.byID[world.GetBlock(blockpos.x, blockpos.y + 1, blockpos.z).ID].Foliage)
                                 world.SetBlock(blockpos.x, blockpos.y + 1, blockpos.z, new BlockMetadata(0, false, 0));
                             else
+                            {
+                                BlockMetadata b = EditTerrain.GetBlock(hit);
+                                if (BlockData.BlockSounds[b.ID].Count > 0)
+                                    _audioSource.PlayOneShot(BlockData.BlockSounds[b.ID][Random.Range(0, BlockData.BlockSounds[b.ID].Count - 1)]);
                                 EditTerrain.SetBlock(hit, new BlockMetadata(0, false, 0), false, true);
+                            }
                         }
                     }
                     else
@@ -507,16 +534,62 @@ public class Modify : MonoBehaviour
                         CameraParent.transform.localRotation *= Quaternion.AngleAxis(Input.GetAxis("Mouse X") * MouseSensitivity, Vector3.up);
                         transform.localRotation *= Quaternion.AngleAxis(Input.GetAxis("Mouse Y") * MouseSensitivity, Vector3.left);
 
-                        float speed = 10f;
-                        if (Input.GetKey(KeyCode.LeftShift)) speed = 20f;
-                        if (Input.GetKey(KeyCode.LeftControl)) speed = 30f;
+                        //if (Input.GetKey(KeyCode.LeftShift)) speed = 20f;
+                        //if (Input.GetKey(KeyCode.LeftControl)) speed = 30f;
+                        if (flyspeed < 10f) flyspeed = 10f;
+                        
+                        if (Input.GetKeyDown(KeyCode.W))
+                        {
+                            if (doubleTapWTimer < 0.5f)
+                            {
+                                flyspeed = 20f;
+                                GetComponent<Camera>().fieldOfView = 80f;
+                            }
+                            else
+                                doubleTapWTimer = 0f;
+                        }
 
-                        if (Input.GetKey(KeyCode.W)) CameraParent.transform.Translate(Vector3.forward * Time.deltaTime * speed);
-                        if (Input.GetKey(KeyCode.S)) CameraParent.transform.Translate(Vector3.back * Time.deltaTime * speed);
-                        if (Input.GetKey(KeyCode.A)) CameraParent.transform.Translate(Vector3.left * Time.deltaTime * speed);
-                        if (Input.GetKey(KeyCode.D)) CameraParent.transform.Translate(Vector3.right * Time.deltaTime * speed);
-                        if (Input.GetKey(KeyCode.E)) CameraParent.transform.Translate(Vector3.up * Time.deltaTime * speed);
-                        if (Input.GetKey(KeyCode.Q)) CameraParent.transform.Translate(Vector3.down * Time.deltaTime * speed);
+                        if (Input.GetKeyUp(KeyCode.W))
+                        {
+                            flyspeed = 10f;
+                            GetComponent<Camera>().fieldOfView = 60f;
+                        }
+                        
+                        if (Input.GetKey(KeyCode.W)) CameraParent.transform.Translate(Vector3.forward * Time.deltaTime * flyspeed);
+                        if (Input.GetKey(KeyCode.S)) CameraParent.transform.Translate(Vector3.back * Time.deltaTime * flyspeed);
+                        if (Input.GetKey(KeyCode.A)) CameraParent.transform.Translate(Vector3.left * Time.deltaTime * flyspeed);
+                        if (Input.GetKey(KeyCode.D)) CameraParent.transform.Translate(Vector3.right * Time.deltaTime * flyspeed);
+                        if (Input.GetKey(KeyCode.Space) && flymode) CameraParent.transform.Translate(Vector3.up * Time.deltaTime * flyspeed);
+                            
+                        if (Input.GetKeyDown(KeyCode.Space))
+                        {
+                            if (flymode)
+                            {
+                                if (doubleTapSpacebarTimer < 0.5f)
+                                {
+                                    flymode = false;
+                                    CameraParent.GetComponent<Rigidbody>().isKinematic = false;
+                                    CameraParent.GetComponent<Rigidbody>().useGravity = true;
+                                }
+                                else
+                                    doubleTapSpacebarTimer = 0f;
+                            }
+                            else
+                            {
+                                if (doubleTapSpacebarTimer < 0.5f)
+                                {
+                                    flymode = true;
+                                    CameraParent.GetComponent<Rigidbody>().isKinematic = true;
+                                    CameraParent.GetComponent<Rigidbody>().useGravity = false;
+                                }
+                                else
+                                {
+                                    CameraParent.GetComponent<Rigidbody>().AddForce(Vector3.up * 150f, ForceMode.Impulse);
+                                    doubleTapSpacebarTimer = 0f;
+                                }
+                            }
+                        }
+                        if (Input.GetKey(KeyCode.LeftShift) && flymode) CameraParent.transform.Translate(Vector3.down * Time.deltaTime * flyspeed);
                     }
 
                     if (Input.GetAxis("Mouse ScrollWheel") > 0f && buildmode == 0)
@@ -617,6 +690,7 @@ public class Modify : MonoBehaviour
                     BuildModeCanvas.SetActive(true);
                     IngameUI.SetActive(false);
                     playmode = false;
+                    flymode = true;
                     CameraParent.GetComponent<Rigidbody>().isKinematic = true;
                     CameraParent.GetComponent<Rigidbody>().useGravity = false;
                     CanvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;

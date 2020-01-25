@@ -29,7 +29,8 @@ public struct BlockSchematic
         this.Y = Y;
         this.Z = Z;
         this.ID = ID;
-        this.Marched = Marched;
+        Switches = BlockSwitches.None;
+        Switches |= Marched ? BlockSwitches.Marched : BlockSwitches.None;
         this.MarchedValue = (byte)(MarchedValue * 255f);
     }
     public BlockSchematic(int X, int Y, int Z, ushort ID, bool Marched, byte MarchedValue)
@@ -38,13 +39,14 @@ public struct BlockSchematic
         this.Y = Y;
         this.Z = Z;
         this.ID = ID;
-        this.Marched = Marched;
+        Switches = BlockSwitches.None;
+        Switches |= Marched ? BlockSwitches.Marched : BlockSwitches.None;
         this.MarchedValue = MarchedValue;
     }
     public byte MarchedValue;
     public int X, Y, Z;
     public ushort ID;
-    public boolean Marched;
+    public BlockSwitches Switches;
 }
 
 public static class Schematics
@@ -80,7 +82,7 @@ public static class Schematics
                         Y = y - Origin.y,
                         Z = z - Origin.z,
                         ID = metadata.ID,
-                        Marched = metadata.Marched,
+                        Switches = metadata.Switches,
                         MarchedValue = metadata.MarchedValue
                     });
                     counter++;
@@ -125,7 +127,7 @@ public static class Schematics
             BlockMetadata md = new BlockMetadata
             {
                 ID = item.ID,
-                Marched = item.Marched,
+                Switches = item.Switches,
                 MarchedValue = item.MarchedValue
             };
             world.SetBlock(originpoint.x + item.X, originpoint.y + item.Y, originpoint.z + item.Z, md, false);
@@ -158,7 +160,7 @@ public static class Schematics
                 BlockMetadata md = new BlockMetadata
                 {
                     ID = item.ID,
-                    Marched = item.Marched,
+                    Switches = item.Switches,
                     MarchedValue = item.MarchedValue
                 };
                 world.SetBlock(Position.x + item.X, Position.y + item.Y, Position.z + item.Z, md, false);
@@ -194,7 +196,7 @@ public static class Schematics
                 BlockMetadata md = new BlockMetadata
                 {
                     ID = item.ID,
-                    Marched = item.Marched,
+                    Switches = item.Switches,
                     MarchedValue = item.MarchedValue
                 };
                 world.SetBlock(item.X, item.Y, item.Z, md, false, BlockUpdateMode.None);
@@ -225,7 +227,7 @@ public static class Schematics
                 BlockMetadata md = new BlockMetadata
                 {
                     ID = item.ID,
-                    Marched = item.Marched,
+                    Switches = item.Switches,
                     MarchedValue = item.MarchedValue
                 };
                 world.SetBlock(Schematic.Position.x + item.X, Schematic.Position.y + item.Y, Schematic.Position.z + item.Z, md, false);

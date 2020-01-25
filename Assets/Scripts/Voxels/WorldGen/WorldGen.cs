@@ -12,18 +12,9 @@ public class WorldGen
 {
     public NativeArray<BlockTypes> blockTypes;
     private AutoResetEvent autoResetEvent = new AutoResetEvent(true); // Adds safety to multithreaded code, so we don't try to write multiple things to list at the same time
-    public List<Chunk> ChunkQueue = new List<Chunk>();
+    public Queue<Chunk> ChunkQueue = new Queue<Chunk>();
 
     public WorldGen() {}
-
-    /// <summary>
-    /// Prepare blockdata NativeArray for later use in jobs
-    /// </summary>
-    public void PrepareBlockInfo()
-    {
-        blockTypes = new NativeArray<BlockTypes>(BlockData.byID.Count, Allocator.Persistent);
-        blockTypes.CopyFrom(BlockData.byID.ToArray());
-    }
 
     /// <summary>
     /// Queue chunk generation at given chunk
@@ -31,17 +22,7 @@ public class WorldGen
     /// <param name="chunk">Chunk that will be queued for world generation</param>
     public void QueueChunk(Chunk chunk, bool MainThread = true)
     {
-        autoResetEvent.WaitOne();
-        ChunkQueue.Add(chunk);
-        autoResetEvent.Set();
-    }
-
-    /// <summary>
-    /// Dispose NativeArrays, so we don't get memory leaks.
-    /// </summary>
-    void OnDestroy()
-    {
-        if (blockTypes.IsCreated) blockTypes.Dispose();
+        ChunkQueue.Enqueue(chunk);
     }
 
     /*
@@ -63,12 +44,13 @@ public class WorldGen
         chunk.nBlocks.CopyTo(chunk.Blocks);
         chunk.nBlocks.Dispose();
     }
+    */
 
-    [BurstCompile]
+    [BurstCompile(FloatPrecision.Low, FloatMode.Fast)]
     struct ChunkGen : IJob
     {
         [DeallocateOnJobCompletion] [ReadOnly] public float3 ChunkCoordinates;
-        [ReadOnly] public float2 seed;
+        //[ReadOnly] public float2 seed;
 
         public NativeArray<BlockMetadata> _blocksNew;
 
@@ -85,46 +67,62 @@ public class WorldGen
                         if (ChunkCoordinates.y + y == 25)
                         {
                             WorkerBlock.ID = 2;
-                            WorkerBlock.Marched = false;
+                            WorkerBlock.Switches = BlockSwitches.None;
                             WorkerBlock.MarchedValue = 0;
                             _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
                         }
                         else if (ChunkCoordinates.y + y < 25)
                         {
                             WorkerBlock.ID = 3;
-                            WorkerBlock.Marched = false;
+                            WorkerBlock.Switches = BlockSwitches.None;
                             WorkerBlock.MarchedValue = 0;
                             _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
                         }
-                        
                     }
                 }
             }
         }
     }
-    */
 
     public virtual IEnumerator GenerateChunk(Chunk chunk)
     {
-        if (chunk.WorldGen_JobHandle.IsCompleted && !chunk.nBlocks.IsCreated)
+        chunk.isGenerating = true;
+        bool isChunkReading = true;
+        while (isChunkReading)
         {
-            chunk.nBlocks = new NativeArray<BlockMetadata>(4096, Allocator.TempJob);
-            var job = new ChunkGenFloatingIslands()
-            {
-                _blocksNew = chunk.nBlocks,
-                ChunkCoordinates = new float3(chunk.pos.x, chunk.pos.y, chunk.pos.z),
-                blocktype = blockTypes, // BlockData values
-                seed = chunk.world.WorldSeed
-            };
-            chunk.WorldGen_JobHandle = job.Schedule();
+            if (chunk.isQueuedForDeletion) break;
+            bool reads = false;
+            for (int x = -1; x <= 1; x++)
+                for (int y = -1; y <= 1; y++)
+                    for (int z = -1; z <= 1; z++)
+                    {
+                        if (chunk.world.CheckChunk(chunk.pos.x + x * 16, chunk.pos.y + y * 16, chunk.pos.z + z * 16)
+                            && chunk.world.GetChunk(chunk.pos.x + x * 16, chunk.pos.y + y * 16, chunk.pos.z + z * 16).isReading > 0)
+                            reads = true;
+                    }
+            isChunkReading = reads;
+            yield return null;
         }
-        yield return new WaitForFixedUpdate();
-        yield return new WaitForEndOfFrame();
-        chunk.WorldGen_JobHandle.Complete();
-        chunk.Blocks = new BlockMetadata[chunk.nBlocks.Length];
-        chunk.nBlocks.CopyTo(chunk.Blocks);
-        chunk.nBlocks.Dispose();
-        chunk.generated = true;
+
+        if (chunk.WorldGen_JobHandle.IsCompleted && !chunk.isQueuedForDeletion && !chunk.isEmpty)
+        {
+            var job = new ChunkGen() //ChunkGenFloatingIslands()
+            {
+                _blocksNew = chunk.BlocksN,
+                ChunkCoordinates = new float3(chunk.pos.x, chunk.pos.y, chunk.pos.z),
+                //blocktype = BlockData.NativeByID, // BlockData values
+                //seed = chunk.world.WorldSeed
+            };
+            if (chunk != null && !chunk.isQueuedForDeletion && !chunk.isEmpty &&
+                chunk.world.CheckChunk(chunk.pos.x, chunk.pos.y, chunk.pos.z) && chunk.BlocksN.IsCreated)
+                chunk.WorldGen_JobHandle = job.Schedule();
+
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+            chunk.WorldGen_JobHandle.Complete();
+            chunk.generated = true;
+            chunk.isGenerating = false;
+        }
     }
 
     [BurstCompile]
@@ -136,13 +134,13 @@ public class WorldGen
         [ReadOnly] public NativeArray<BlockTypes> blocktype;
         [ReadOnly] public float2 seed;
 
-        public NativeArray<BlockMetadata> _blocksNew;
+        [WriteOnly] public NativeArray<BlockMetadata> _blocksNew;
 
         public void Execute()
         {
             random = new Random(0x6E624EB7u);
             BlockMetadata WorkerBlock = new BlockMetadata();
-
+            NativeArray<BlockMetadata> _blocksNewTemp = new NativeArray<BlockMetadata>(4096, Allocator.Temp);
             float scale = 5f;
             float scale2 = 1f;
             int power = 2;
@@ -256,7 +254,7 @@ public class WorldGen
 
                     for (int y = 0; y < 16; y++)
                     {
-                        if (_blocksNew[x + y * 16 + z * 256].ID == 0)
+                        if (_blocksNewTemp[x + y * 16 + z * 256].ID == 0)
                         {
                             if (SurfaceNoise2 * 2 > BottomNoise_2)
                             {
@@ -271,18 +269,18 @@ public class WorldGen
                                                 if (y + iy < 15)
                                                 {
                                                     WorkerBlock.ID = 12;
-                                                    WorkerBlock.Marched = true;
+                                                    WorkerBlock.Switches = BlockSwitches.Marched;
                                                     WorkerBlock.SetMarchedValue(random.NextFloat(0.7f, 1f));
-                                                    _blocksNew[x + (y + iy) * 16 + z * 256] = WorkerBlock;
+                                                    _blocksNewTemp[x + (y + iy) * 16 + z * 256] = WorkerBlock;
                                                 }
                                             }
                                         }
                                         else
                                         {
                                             WorkerBlock.ID = 2;
-                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.Switches = BlockSwitches.Marched;
                                             WorkerBlock.SetMarchedValue((SurfaceNoise2 - Surface_2_int) / 2 + 0.5f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
 
                                     }
@@ -291,16 +289,16 @@ public class WorldGen
                                         if (y > StoneLayer - diff)
                                         {
                                             WorkerBlock.ID = 3;
-                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.Switches = BlockSwitches.Marched;
                                             WorkerBlock.SetMarchedValue((SurfaceNoise2 - Surface_2_int) / 2 + 0.5f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                         else
                                         {
                                             WorkerBlock.ID = 1;
-                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.Switches = BlockSwitches.Marched;
                                             WorkerBlock.SetMarchedValue((SurfaceNoise2 - Surface_2_int) / 2 + 0.5f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                     }
                                     else if (y == Surface_2_int + 1)
@@ -311,11 +309,11 @@ public class WorldGen
 
                                         WorkerBlock.ID = 2;
 
-                                        WorkerBlock.Marched = true;
+                                        WorkerBlock.Switches = BlockSwitches.Marched;
                                         WorkerBlock.SetMarchedValue(newmarchval);
 
                                         if ((random.NextInt(0, 80) > 55) && WorkerBlock.ID == 2 && y > 0 && y < 15
-                                            && _blocksNew[x + y * 16 + z * 256].ID == 0)
+                                            && _blocksNewTemp[x + y * 16 + z * 256].ID == 0)
                                         {
                                             int randomizer = random.NextInt(0, 7);
                                             if (randomizer == 0) WorkerBlock.ID = 40;
@@ -324,13 +322,13 @@ public class WorldGen
                                             else if (randomizer == 3) WorkerBlock.ID = 43;
                                             else WorkerBlock.ID = 44;
 
-                                            WorkerBlock.Marched = false;
+                                            WorkerBlock.Switches = BlockSwitches.None;
                                             WorkerBlock.SetMarchedValue(1f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                         else
                                         {
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                     }
                                 }
@@ -350,18 +348,18 @@ public class WorldGen
                                                 if (y + iy < 15)
                                                 {
                                                     WorkerBlock.ID = 12;
-                                                    WorkerBlock.Marched = true;
+                                                    WorkerBlock.Switches = BlockSwitches.Marched;
                                                     WorkerBlock.SetMarchedValue(random.NextFloat(0.7f, 1f));
-                                                    _blocksNew[x + (y + iy) * 16 + z * 256] = WorkerBlock;
+                                                    _blocksNewTemp[x + (y + iy) * 16 + z * 256] = WorkerBlock;
                                                 }
                                             }
                                         }
                                         else
                                         {
                                             WorkerBlock.ID = 2;
-                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.Switches = BlockSwitches.Marched;
                                             WorkerBlock.SetMarchedValue((SurfaceNoise - Surface_int) / 2 + 0.5f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
 
                                     }
@@ -370,16 +368,16 @@ public class WorldGen
                                         if (y > StoneLayer)
                                         {
                                             WorkerBlock.ID = 3;
-                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.Switches = BlockSwitches.Marched;
                                             WorkerBlock.SetMarchedValue((SurfaceNoise - Surface_int) / 2 + 0.5f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                         else
                                         {
                                             WorkerBlock.ID = 1;
-                                            WorkerBlock.Marched = true;
+                                            WorkerBlock.Switches = BlockSwitches.Marched;
                                             WorkerBlock.SetMarchedValue((SurfaceNoise - Surface_int) / 2 + 0.5f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                     }
                                     else if (y == Surface_int + 1)
@@ -390,11 +388,11 @@ public class WorldGen
 
                                         WorkerBlock.ID = 2;
 
-                                        WorkerBlock.Marched = true;
+                                        WorkerBlock.Switches = BlockSwitches.Marched;
                                         WorkerBlock.SetMarchedValue(newmarchval);
 
                                         if ((random.NextInt(0, 80) > 45) && WorkerBlock.ID == 2 && y > 0 && y < 15
-                                            && _blocksNew[x + y * 16 + z * 256].ID == 0)
+                                            && _blocksNewTemp[x + y * 16 + z * 256].ID == 0)
                                         {
                                             int randomizer = random.NextInt(0, 7);
                                             if (randomizer == 0) WorkerBlock.ID = 40;
@@ -403,13 +401,13 @@ public class WorldGen
                                             else if (randomizer == 3) WorkerBlock.ID = 43;
                                             else WorkerBlock.ID = 44;
 
-                                            WorkerBlock.Marched = false;
+                                            WorkerBlock.Switches = BlockSwitches.None;
                                             WorkerBlock.SetMarchedValue(0f);
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                         else
                                         {
-                                            _blocksNew[x + y * 16 + z * 256] = WorkerBlock;
+                                            _blocksNewTemp[x + y * 16 + z * 256] = WorkerBlock;
                                         }
                                     }
                                 }
@@ -420,6 +418,8 @@ public class WorldGen
                     }
                 }
             }
+            _blocksNew.CopyFrom(_blocksNewTemp);
+            _blocksNewTemp.Dispose();
         }
     }
 }

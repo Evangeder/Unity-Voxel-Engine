@@ -56,6 +56,7 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -106,7 +107,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7649172674346294954}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 815fabf662e1548448b8566280dacd0a, type: 3}
+  m_Script: {fileID: 11500000, guid: 14751ef83991455409ded787be16e053, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   world: {fileID: 0}
@@ -114,11 +115,12 @@ MonoBehaviour:
     x: 0
     y: 0
     z: 0
-  blocks: []
-  Chunk_Water: {fileID: 0}
-  Chunk_Smoothed: {fileID: 0}
-  MarchingCubesSmoothness: 1
-  ForceUpdate: 0
-  QueueUpdate: 0
-  TestMapgen: 0
+  generated: 0
+  isGenerating: 0
+  isReading: 0
+  isQueuedForDeletion: 0
+  RenderImportance: 0
+  LOD: 1
+  rendered: 0
   isMapgenUpdate: 1
+  meshRenderer: {fileID: 0}

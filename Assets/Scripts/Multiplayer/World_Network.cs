@@ -30,7 +30,10 @@ public class World_Network : WorldNetworkingBehavior
         if (!NetworkManager.Instance.IsServer) return;
 
         world.MapLoadInfo = "Loading server settings...";
+        MarchingCubesTables.ConvertToNative();
         BlockData.InitializeBlocks();
+        
+        StartCoroutine(BlockData.InitializeSounds());
         world.MapLoadInfo = "Setting up server...";
 
         // Send handshake packet to let player know that the connection was estabilished.
@@ -53,7 +56,7 @@ public class World_Network : WorldNetworkingBehavior
         if (Mods.LoadedMapgens.Count > 0)
         {
             Debug.Log("Found custom mapgen");
-            world.worldGen = Activator.CreateInstance(Mods.LoadedMapgens[0]);
+            world.worldGen = new WorldGen(); //Activator.CreateInstance(Mods.LoadedMapgens[0]);
         }
         else
         {
@@ -61,7 +64,6 @@ public class World_Network : WorldNetworkingBehavior
             world.worldGen = new WorldGen();
         }
 
-        world.worldGen.PrepareBlockInfo();
         StartCoroutine(world.ExecuteWorldgenQueue());
 
         if (Mods.LoadedMapgens.Count > 0)
@@ -181,8 +183,9 @@ public class World_Network : WorldNetworkingBehavior
         string sMapgenName = System.Text.Encoding.UTF8.GetString(MapgenName, 0, MapgenName.Length);
 
         Mods.CompileMod(System.Text.Encoding.UTF8.GetString(MapgenCode, 0, MapgenCode.Length), sMapgenName);
-        world.worldGen = Activator.CreateInstance(Mods.GetMapgen(sMapgenName));
-        world.worldGen.PrepareBlockInfo();
+        //world.worldGen = Activator.CreateInstance(Mods.GetMapgen(sMapgenName));
+        world.worldGen = new WorldGen();
+        //world.worldGen.PrepareBlockInfo();
         StartCoroutine(world.ExecuteWorldgenQueue());
     }
 

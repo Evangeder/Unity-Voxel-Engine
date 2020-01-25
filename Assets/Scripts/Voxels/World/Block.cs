@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 
 [Serializable]
 public enum BlockTextures : int
@@ -18,6 +19,51 @@ public enum BlockTextures : int
     West = 5,
     Marched = 6
 }
+
+[Flags]
+public enum BlockSwitches : byte // up to 7 booleans
+{
+    None              = 0,
+    Marched           = 1 << 1,
+    PhysicsTriggered  = 1 << 2,
+    Undefined         = 1 << 3,
+    Undefined1        = 1 << 4,
+    Undefined2        = 1 << 5,
+    Undefined3        = 1 << 6,
+    Undefined4        = 1 << 7,
+    // usage: BlockSwitches.Marched | BlockSwitches.PhysicsTriggered
+    // usage: BlockSwitches.Marched & BlockSwitches.PhysicsTriggered
+}
+
+public static class BlockSwitchesClass
+{
+    public static bool Get(this BlockSwitches blockSwitches, BlockSwitches switches)
+    {
+        if ((switches & blockSwitches) == switches) return true;
+        return false;
+    }
+
+    public static void Clear(this BlockSwitches blockSwitches)
+    {
+        blockSwitches = BlockSwitches.None;
+    }
+
+    public static void SetTrue(this BlockSwitches blockSwitches, BlockSwitches switches)
+    {
+        blockSwitches |= switches;
+    }
+
+    public static void SetFalse(this BlockSwitches blockSwitches, BlockSwitches switches)
+    {
+        blockSwitches |= ~switches;
+    }
+}
+
+//BlockSwitches b = BlockSwitches.Marched | BlockSwitches.PhysicsTriggered;
+//if ((b & BlockSwitches.Marched) == BlockSwitches.Marched)
+//    Debug.Log("Test: Marched");
+//if ((b & BlockSwitches.PhysicsTriggered) == BlockSwitches.PhysicsTriggered)
+//    Debug.Log("Test: PhysicsTriggered");
 
 [Serializable]
 public readonly struct BlockTypes
@@ -109,10 +155,11 @@ public readonly struct BlockTypes
 [Serializable]
 public struct BlockMetadata
 {
-    public BlockMetadata(ushort ID, bool Marched = false, byte MarchedValue = 0)
+    public BlockMetadata(ushort ID, bool marched = false, byte MarchedValue = 0)
     {
         this.ID = ID;
-        this.Marched = Marched;
+        Switches = BlockSwitches.None;
+        Switches |= marched ? BlockSwitches.Marched : BlockSwitches.None;
         this.MarchedValue = MarchedValue;
     }
 
@@ -120,12 +167,13 @@ public struct BlockMetadata
     /// Old version that is using float value
     /// </summary>
     /// <param name="ID"></param>
-    /// <param name="Marched"></param>
+    /// <param name="marched"></param>
     /// <param name="MarchedValue"></param>
-    public BlockMetadata(ushort ID, bool Marched = false, float MarchedValue = 0f)
+    public BlockMetadata(ushort ID, bool marched = false, float MarchedValue = 0f)
     {
         this.ID = ID;
-        this.Marched = Marched;
+        Switches = BlockSwitches.None;
+        Switches |= marched ? BlockSwitches.Marched : BlockSwitches.None;
         this.MarchedValue = (byte)(MarchedValue * 255f);
     }
 
@@ -135,6 +183,13 @@ public struct BlockMetadata
         this = T;
     }
 
+    public BlockMetadata(PhysicsQueuedBlockMetadata T)
+    {
+        ID = T.ID;
+        MarchedValue = T.MarchedValue;
+        Switches = T.Switches;
+    }
+    
     public void SetMarchedValue(float f)
     {
         if (f >= 1f)
@@ -152,7 +207,55 @@ public struct BlockMetadata
 
     public ushort ID { get; set; }
     public byte MarchedValue { get; set; }
-    public boolean Marched { get; set; }
+    public BlockSwitches Switches { get; set; }
+    
+    public static explicit operator BlockMetadata(PhysicsQueuedBlockMetadata T) => new BlockMetadata(T);
+}
+
+public struct PhysicsQueuedBlockMetadata
+{
+    public PhysicsQueuedBlockMetadata(long timestamp, ushort ID, bool marched = false, byte MarchedValue = 0)
+    {
+        this.Timestamp = timestamp;
+        this.ID = ID;
+        Switches = BlockSwitches.None;
+        Switches |= marched ? BlockSwitches.Marched : BlockSwitches.None;
+        this.MarchedValue = MarchedValue;
+    }
+
+    /// <summary>
+    /// Old version that is using float value
+    /// </summary>
+    /// <param name="ID"></param>
+    /// <param name="marched"></param>
+    /// <param name="MarchedValue"></param>
+    public PhysicsQueuedBlockMetadata(long timestamp, ushort ID, bool marched = false, float MarchedValue = 0f)
+    {
+        this.Timestamp = timestamp;
+        this.ID = ID;
+        Switches = BlockSwitches.None;
+        Switches |= marched ? BlockSwitches.Marched : BlockSwitches.None;
+        this.MarchedValue = (byte)(MarchedValue * 255f);
+    }
+
+    // For copying
+    public PhysicsQueuedBlockMetadata(PhysicsQueuedBlockMetadata T)
+    {
+        this = T;
+    }
+
+    public PhysicsQueuedBlockMetadata(long timestamp, BlockMetadata T)
+    {
+        this.Timestamp = timestamp;
+        ID = T.ID;
+        MarchedValue = T.MarchedValue;
+        Switches = T.Switches;
+    }
+
+    public long Timestamp;
+    public ushort ID { get; set; }
+    public byte MarchedValue { get; set; }
+    public BlockSwitches Switches { get; set; }
 }
 
 [Serializable]
@@ -164,12 +267,16 @@ public static class BlockData
     public const float LargestValidMarchingValue = 0.996f;
 
     public static List<BlockTypes> byID = new List<BlockTypes>();
+    public static NativeArray<BlockTypes> NativeByID;
     public static sbyte MarchingLayers;
     public static float BlockTileSize = 0.25f;
     public static float TextureSize = 1f;
     public static Texture2D BlockTexture;
     public static string[] BlockNames;
+    public static bool SoundsLoaded = false;
 
+    public static List<AudioClip>[] BlockSounds;
+    
     public static int GetAddress(int x, int y, int z, int size = 16)
     {
         return (x + y * size + z * size * size);
@@ -189,6 +296,7 @@ public static class BlockData
             BlockTexture = new Texture2D(int.Parse(Blocks_INI.Read("Texture_Width")), int.Parse(Blocks_INI.Read("Texture_Height")), TextureFormat.RGB24, false);
             BlockTexture.filterMode = FilterMode.Point;
             BlockTexture.LoadImage(bytes);
+            BlockTexture.Apply();
         } else {
             Debug.LogError($"<color=red><b>COULD NOT FIND TEXTURES FILE!</b></color>, game will continue to run without texturing.\nPlease create or drag Blocks.png file to path: <i>{Application.dataPath}/Mods/</i>.");
         }
@@ -197,6 +305,33 @@ public static class BlockData
             BlockTileSize = float.Parse(Blocks_INI.Read("TileSize"), CultureInfo.InvariantCulture);
         if (Blocks_INI.KeyExists("TextureSize"))
             TextureSize = float.Parse(Blocks_INI.Read("TextureSize"), CultureInfo.InvariantCulture);
+    }
+
+    public static IEnumerator InitializeSounds()
+    {
+        IniFile Blocks_INI = new IniFile("/Mods/Blocks.ini");
+        for (int i = 0; i < BlockNames.Length; i++)
+        {
+            BlockSounds[i] = new List<AudioClip>();
+            if (Blocks_INI.KeyExists("Sounds", i.ToString()))
+            {
+                int sounds = int.Parse(Blocks_INI.Read("Sounds", i.ToString()));
+                for (int i2 = 0; i2 < sounds; i2++)
+                {
+                    string path =
+                        $"{Application.dataPath}/Mods/{Blocks_INI.Read($"Sound{i2}", i.ToString()).Replace('\\', '/')}";
+                    using (var download = new WWW(path))
+                    {
+                        yield return download;
+                        var clip = download.GetAudioClip();
+                        if (clip != null)
+                            BlockSounds[i].Add(clip);
+                    }
+                }
+                Debug.Log($"[BlockData] Loaded {BlockSounds[i].Count} sounds for block {BlockNames[i]}");
+            }
+        }
+        SoundsLoaded = true;
     }
 
     public static void InitializeBlocks(bool IsServer = true)
@@ -233,11 +368,30 @@ public static class BlockData
             }
 
             int MaxBlocks = int.Parse(Blocks_INI.Read("Blocktypes"));
+            BlockSounds = new List<AudioClip>[MaxBlocks];
             BlockNames = new string[MaxBlocks];
 
             for (int i = 0; i < MaxBlocks; i++)
             {
                 BlockNames[i] = Blocks_INI.Read("Name", i.ToString());
+                
+                //if (Blocks_INI.KeyExists("Sounds",i.ToString()))
+                //{
+                //    int sounds = int.Parse(Blocks_INI.Read("Sounds", i.ToString()));
+                //    for (int i2 = 0; i2 < sounds; i2++)
+                //    {
+                //        string path = $"{Application.dataPath}/Mods/{Blocks_INI.Read($"Sound{i2}", i.ToString()).Replace('\\', '/')}";
+                //        Debug.Log($"[BlockData] Loading sound: {path}");
+                //        using (var download = new WWW(path))
+                //        {
+                //            var clip = download.GetAudioClip();
+                //            if (clip != null)
+                //                BlockSounds[i].Add(clip);
+                //        }
+                //    }
+                //    Debug.Log($"[BlockData] Loaded {BlockSounds[i].Count} sounds for block {BlockNames[i]}");
+                //}
+                
                 if (Blocks_INI.KeyExists("Texture_Up", i.ToString()))
                 {
                     int2[] tex = new int2[7];
@@ -259,6 +413,9 @@ public static class BlockData
                         tex[6] = new int2(new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1])));
                     } else
                         tex[6] = tex[0];
+ 
+                    tempstr2 = Blocks_INI.Read("Texture_West", i.ToString()).Split(',');
+                    tex[5] = new int2(int.Parse(tempstr2[0]), int.Parse(tempstr2[1]));
 
                     byID.Add(new BlockTypes(
                         bool.Parse(Blocks_INI.Read("Solid", i.ToString())),
@@ -375,6 +532,10 @@ public static class BlockData
                     + "Please create or drag Blocks.png file to path: <i>" + Application.dataPath + "/Mods/</i>.");
             }
         }
+        NativeByID = new NativeArray<BlockTypes>(byID.Count, Allocator.Persistent);
+        NativeByID.CopyFrom(byID.ToArray());
+
+        
     }
 
     public static int GetIDFromName(string Name)
@@ -396,6 +557,39 @@ public static class BlockData
 
 public static class MarchingCubesTables
 {
+    private static bool ConvertedToNative = false;
+
+    public static NativeArray<int> 
+        T_CubeEdgeFlags, 
+        T_EdgeConnection, 
+        T_TriangleConnectionTable, 
+        T_VertexOffset;
+
+    public static NativeArray<float> T_EdgeDirection;
+
+    public static void ConvertToNative()
+    {
+        if (!ConvertedToNative)
+        {
+            T_CubeEdgeFlags = new NativeArray<int>(CubeEdgeFlags.Length, Allocator.Persistent);
+            T_CubeEdgeFlags.CopyFrom(CubeEdgeFlags);
+
+            T_EdgeConnection = new NativeArray<int>(EdgeConnection.Length, Allocator.Persistent);
+            T_EdgeConnection.CopyFrom(EdgeConnection);
+
+            T_EdgeDirection = new NativeArray<float>(EdgeDirection.Length, Allocator.Persistent);
+            T_EdgeDirection.CopyFrom(EdgeDirection);
+
+            T_TriangleConnectionTable = new NativeArray<int>(TriangleConnectionTable.Length, Allocator.Persistent);
+            T_TriangleConnectionTable.CopyFrom(TriangleConnectionTable);
+
+            T_VertexOffset = new NativeArray<int>(VertexOffset.Length, Allocator.Persistent);
+            T_VertexOffset.CopyFrom(VertexOffset);
+        }
+        else
+            Debug.LogWarning("Marching Cubes Tables are already converted to Native!");
+    }
+
     /// <summary>
     /// VertexOffset lists the positions, relative to vertex0, 
     /// of each of the 8 vertices of a cube.
