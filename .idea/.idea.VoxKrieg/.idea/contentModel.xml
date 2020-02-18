@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Smart\.Rider2019.3\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\Smart\.Rider2019.3\system\resharper-host\local\Transient\ReSharperHost\v193\SolutionCaches\_VoxKrieg.237582185.00" t="ExcludeRecursive" />
+    <e p="D:\Unity\VoxKrieg" t="IncludeRecursive">
+      <e p="Assembly-CSharp-Editor.csproj" t="IncludeRecursive" />
+      <e p="Assembly-CSharp-firstpass.csproj" t="IncludeRecursive" />
+      <e p="Assembly-CSharp.csproj" t="IncludeRecursive" />
+      <e p="Assets" t="Include">
+        <e p="Bearded Man Studios Inc" t="Include">
+          <e p="Editor" t="Include">
+            <e p="ForgeAcceptableFieldTypes.cs" t="Include" />
+            <e p="ForgeAcceptableRPCTypes.cs" t="Include" />
+            <e p="ForgeBaseClassType.cs" t="Include" />
+            <e p="ForgeClassFieldRPCValue.cs" t="Include" />
+            <e p="ForgeClassFieldValue.cs" t="Include" />
+            <e p="ForgeClassIdentity.cs" t="Include" />
+            <e p="ForgeClassObject.cs" t="Include" />
+            <e p="ForgeClassRewindValue.cs" t="Include" />
+            <e p="ForgeClassRPCValue.cs" t="Include" />
+            <e p="ForgeEditorButton.cs" t="Include" />
+            <e p="ForgeEditorField.cs" t="Include" />
+            <e p="ForgeEditorRPCField.cs" t="Include" />
+            <e p="ForgeNetworkingAboutEditor.cs" t="Include" />
+            <e p="ForgeNetworkingEditor.cs" t="Include" />
+            <e p="ForgeNRPCTypes.cs" t="Include" />
+            <e p="IFNSerializable.cs" t="Include" />
+            <e p="Resources" t="Include">
+              <e p="BMS_Forge_Editor" t="Include">
+                <e p="NetworkBehaviorTemplate.txt" t="Include" />
+                <e p="NetworkManagerTemplate.txt" t="Include" />
+                <e p="NetworkObjectFactoryTemplate.txt" t="Include" />
+                <e p="NetworkObjectTemplate.txt" t="Include" />
+                <e p="StandAloneNetworkBehaviorTemplate.txt" t="Include" />
+                <e p="version.txt" t="Include" />
+              </e>
+            </e>
+            <e p="SimpleJSONEditor.cs" t="Include" />
+            <e p="ValidationResult.cs" t="Include" />
+          </e>
+          <e p="Examples" t="Include">
+            <e p="Cube Forge" t="Include">
+              <e p="Scripts" t="Include">
+                <e p="CubeForgeGame.cs" t="Include" />
+                <e p="NetCam.cs" t="Include" />
+                <e p="Primitive.cs" t="Include" />
+              </e>
+            </e>
+            <e p="Proximity" t="Include">
+              <e p="ExampleProximityPlayer.cs" t="Include" />
+              <e p="ExampleProximitySpawn.cs" t="Include" />
+            </e>
+          </e>
+          <e p="Generated" t="Include">
+            <e p="NetworkManager.cs" t="Include" />
+            <e p="NetworkObjectFactory.cs" t="Include" />
+            <e p="UserGenerated" t="Include">
+              <e p="ChatManagerBehavior.cs" t="Include" />
+              <e p="ChatManagerNetworkObject.cs" t="Include" />
+              <e p="CubeForgeGameBehavior.cs" t="Include" />
+              <e p="CubeForgeGameNetworkObject.cs" t="Include" />
+              <e p="ExampleProximityPlayerBehavior.cs" t="Include" />
+              <e p="ExampleProximityPlayerNetworkObject.cs" t="Include" />
+              <e p="NetworkCameraBehavior.cs" t="Include" />
+              <e p="NetworkCameraNetworkObject.cs" t="Include" />
+              <e p="Player_NetworkingBehavior.cs" t="Include" />
+              <e p="Player_NetworkingNetworkObject.cs" t="Include" />
+              <e p="WorldNetworkingBehavior.cs" t="Include" />
+              <e p="WorldNetworkingNetworkObject.cs" t="Include" />
+            </e>
+          </e>
+          <e p="Modules" t="Include">
+            <e p="Chat" t="Include">
+              <e p="ChatMaker.cs" t="Include" />
+              <e p="ChatManager.cs" t="Include" />
+            </e>
+            <e p="LobbySystem" t="Include">
+              <e p="LobbyManager.cs" t="Include" />
+              <e p="LobbyPlayer.cs" t="Include" />
+              <e p="LobbyPlayerItem.cs" t="Include" />
+            </e>
+            <e p="Stand Alone Chat" t="Include">
+              <e p="StandAloneChat.cs" t="Include" />
+            </e>
+            <e p="VOIP" t="Include">
+              <e p="VOIP.cs" t="Include" />
+              <e p="VoipStarter.cs" t="Include" />
+            </e>
+          </e>
+          <e p="Scripts" t="Include">
+            <e p="BMSUnityExtensions.cs" t="Include" />
+            <e p="ForgeGeneratedField.cs" t="Include" />
+            <e p="GeneratedInterpolAttribute.cs" t="Include" />
+            <e p="GeneratedRPCAttribute.cs" t="Include" />
+            <e p="GeneratedRPCVariableNamesAttribute.cs" t="Include" />
+            <e p="InterpolateQuaternion.cs" t="Include" />
+            <e p="InterpolateVector2.cs" t="Include" />
+            <e p="InterpolateVector3.cs" t="Include" />
+            <e p="InterpolateVector4.cs" t="Include" />
+            <e p="Logging" t="Include">
+              <e p="BMSLogger.cs" t="Include" />
+            </e>
+            <e p="MainThreadManager.cs" t="Include" />
+            <e p="Multiplayer Menu" t="Include">
+              <e p="MultiplayerMenu.cs" t="Include" />
+            </e>
+            <e p="NetworkBehavior.cs" t="Include" />
+            <e p="Networking" t="Include">
+              <e p="ArgumentParser.cs" t="Include" />
+              <e p="BeardedMath.cs" t="Include" />
+              <e p="BMSByte.cs" t="Include" />
+              <e p="BMSExtensions.cs" t="Include" />
+              <e p="BufferManager.cs" t="Include" />
+              <e p="Concurrency.cs" t="Include" />
+              <e p="Forge" t="Include">
+                <e p="DataStore" t="Include">
+                  <e p="Cache.cs" t="Include" />
+                </e>
+                <e p="Logging" t="Include">
+                  <e p="BMSLog.cs" t="Include" />
+                  <e p="IBMSLogger.cs" t="Include" />
+                </e>
+                <e p="Networking" t="Include">
+                  <e p="BasePacketComposer.cs" t="Include" />
+                  <e p="BaseSteamP2P.cs" t="Include" />
+                  <e p="BaseTCP.cs" t="Include" />
+                  <e p="BaseUDP.cs" t="Include" />
+                  <e p="CachedSteamP2PClient.cs" t="Include" />
+                  <e p="CachedUdpClient.cs" t="Include" />
+                  <e p="CommonServer.cs" t="Include" />
+                  <e p="Enums" t="Include">
+                    <e p="Receivers.cs" t="Include" />
+                  </e>
+                  <e p="Exceptions.cs" t="Include" />
+                  <e p="Filters" t="Include">
+                    <e p="IConnectionFilter.cs" t="Include" />
+                  </e>
+                  <e p="Frame" t="Include">
+                    <e p="Binary.cs" t="Include" />
+                    <e p="ConnectionClose.cs" t="Include" />
+                    <e p="Continuation.cs" t="Include" />
+                    <e p="Error.cs" t="Include" />
+                    <e p="Factory.cs" t="Include" />
+                    <e p="FrameStream.cs" t="Include" />
+                    <e p="Ping.cs" t="Include" />
+                    <e p="Pong.cs" t="Include" />
+                    <e p="Text.cs" t="Include" />
+                  </e>
+                  <e p="IClient.cs" t="Include" />
+                  <e p="IClientMockPlayer.cs" t="Include" />
+                  <e p="IServer.cs" t="Include" />
+                  <e p="IUserAuthenticator.cs" t="Include" />
+                  <e p="Lobby" t="Include">
+                    <e p="ILobbyMaster.cs" t="Include" />
+                    <e p="LobbyService.cs" t="Include" />
+                  </e>
+                  <e p="LocalNetworkScanning.cs" t="Include" />
+                  <e p="MasterServerResponse.cs" t="Include" />
+                  <e p="Nat" t="Include">
+                    <e p="NatHolePunch.cs" t="Include" />
+                  </e>
+                  <e p="NetWorker.cs" t="Include" />
+                  <e p="NetworkingPlayer.cs" t="Include" />
+                  <e p="ObjectMapper.cs" t="Include" />
+                  <e p="Objects" t="Include">
+                    <e p="IInterpolator.cs" t="Include" />
+                    <e p="INetworkBehavior.cs" t="Include" />
+                    <e p="INetworkObjectFactory.cs" t="Include" />
+                    <e p="Interpolated.cs" t="Include" />
+                    <e p="InterpolateDouble.cs" t="Include" />
+                    <e p="InterpolateFloat.cs" t="Include" />
+                    <e p="NetworkObject.cs" t="Include" />
+                    <e p="Rewind.cs" t="Include" />
+                  </e>
+                  <e p="RouterIds.cs" t="Include" />
+                  <e p="Rpc.cs" t="Include" />
+                  <e p="RpcArgs.cs" t="Include" />
+                  <e p="RPCInfo.cs" t="Include" />
+                  <e p="SteamNetworkingPlayer.cs" t="Include" />
+                  <e p="SteamP2PClient.cs" t="Include" />
+                  <e p="SteamP2PPacketComposer.cs" t="Include" />
+                  <e p="SteamP2PServer.cs" t="Include" />
+                  <e p="TCPClient.cs" t="Include" />
+                  <e p="TCPClientBase.cs" t="Include" />
+                  <e p="TCPMasterClient.cs" t="Include" />
+                  <e p="TCPServer.cs" t="Include" />
+                  <e p="Time.cs" t="Include" />
+                  <e p="UDPClient.cs" t="Include" />
+                  <e p="UDPGroupIds.cs" t="Include" />
+                  <e p="UDPNetworkingPlayer.cs" t="Include" />
+                  <e p="UDPPacket.cs" t="Include" />
+                  <e p="UDPPacketComposer.cs" t="Include" />
+                  <e p="UDPPacketGroup.cs" t="Include" />
+                  <e p="UDPPacketManager.cs" t="Include" />
+                  <e p="UDPPacketSequence.cs" t="Include" />
+                  <e p="UDPServer.cs" t="Include" />
+                  <e p="Websockets.cs" t="Include" />
+                </e>
+              </e>
+              <e p="GridLocation.cs" t="Include" />
+              <e p="Logging" t="Include">
+                <e p="ForgeLogger.cs" t="Include" />
+              </e>
+              <e p="SimpleJSON.cs" t="Include" />
+              <e p="Threading" t="Include">
+                <e p="IThreadRunner.cs" t="Include" />
+                <e p="Task.cs" t="Include" />
+              </e>
+              <e p="Vector.cs" t="Include" />
+            </e>
+            <e p="NetworkManager.cs" t="Include" />
+            <e p="NetworkObjectFactoryBase.cs" t="Include" />
+            <e p="Server Browser" t="Include">
+              <e p="ServerBrowser.cs" t="Include" />
+              <e p="ServerBrowserItem.cs" t="Include" />
+            </e>
+            <e p="TemplateSystem.cs" t="Include" />
+            <e p="UnityObjectMapper.cs" t="Include" />
+          </e>
+        </e>
+        <e p="Fonts" t="Include">
+          <e p="Komodore" t="Include">
+            <e p="Readme.txt" t="Include" />
+          </e>
+        </e>
+        <e p="Logs" t="Include">
+          <e p="bmslog.txt" t="Include" />
+        </e>
+        <e p="Mods" t="Include">
+          <e p="outputstring.txt" t="Include" />
+          <e p="Readme.txt" t="Include" />
+        </e>
+        <e p="Plugins" t="Include">
+          <e p="DiscordGameSDK" t="Include">
+            <e p="csharp" t="Include">
+              <e p="ActivityManager.cs" t="Include" />
+              <e p="Constants.cs" t="Include" />
+              <e p="Core.cs" t="Include" />
+              <e p="ImageManager.cs" t="Include" />
+              <e p="LobbyManager.cs" t="Include" />
+              <e p="StorageManager.cs" t="Include" />
+              <e p="StoreManager.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Samples" t="Include">
+          <e p="High Definition RP" t="Include">
+            <e p="7.1.7" t="Include">
+              <e p="Procedural Sky" t="Include">
+                <e p="Editor" t="Include">
+                  <e p="ProceduralSky" t="Include">
+                    <e p="ProceduralSkyEditor.cs" t="Include" />
+                  </e>
+                </e>
+                <e p="Runtime" t="Include">
+                  <e p="ProceduralSky" t="Include">
+                    <e p="ProceduralSky.cs" t="Include" />
+                    <e p="ProceduralSkyRenderer.cs" t="Include" />
+                    <e p="Resources" t="Include">
+                      <e p="ProceduralSky.shader" t="Include" />
+                    </e>
+                  </e>
+                </e>
+              </e>
+            </e>
+          </e>
+        </e>
+        <e p="Scenes" t="Include">
+          <e p="Main Menu" t="Include">
+            <e p="OverlayFadeout.cs" t="Include" />
+          </e>
+          <e p="Mesh Editor" t="Include">
+            <e p="MeshEditorUI.cs" t="Include" />
+            <e p="MiniCube" t="Include">
+              <e p="ResizeUnselected.cs" t="Include" />
+            </e>
+            <e p="OverlayBlend.shader" t="Include" />
+            <e p="test unlit.shader" t="Include" />
+          </e>
+          <e p="ModLoader" t="Include">
+            <e p="DestroyLoadingAnimation.cs" t="Include" />
+            <e p="DestroyMeFromAnim.cs" t="Include" />
+          </e>
+          <e p="Testing" t="Include">
+            <e p="tat_.cs" t="Include" />
+          </e>
+        </e>
+        <e p="Scripts" t="Include">
+          <e p="Blittable fix" t="Include">
+            <e p="boolean.cs" t="Include" />
+          </e>
+          <e p="CielaSpike" t="Include">
+            <e p="Thread Ninja" t="Include">
+              <e p="Example" t="Include">
+                <e p="ExampleScript.cs" t="Include" />
+              </e>
+              <e p="Ninja.cs" t="Include" />
+              <e p="Task.cs" t="Include" />
+              <e p="TaskState.cs" t="Include" />
+              <e p="ThreadNinjaMonoBehaviourExtensions.cs" t="Include" />
+            </e>
+          </e>
+          <e p="Class Extensions" t="Include">
+            <e p="Class_Extensions.cs" t="Include" />
+            <e p="UnityMainThreadDispatcher.cs" t="Include" />
+          </e>
+          <e p="Color picker" t="Include">
+            <e p="ColorPicker shader.shader" t="Include" />
+            <e p="ColorPicker.cs" t="Include" />
+            <e p="ColorPreview.cs" t="Include" />
+          </e>
+          <e p="Configuration and modding" t="Include">
+            <e p="Modding" t="Include">
+              <e p="Inifile.cs" t="Include" />
+            </e>
+          </e>
+          <e p="Discord" t="Include">
+            <e p="DiscordManager.cs" t="Include" />
+          </e>
+          <e p="EmojiSearchApi" t="Include">
+            <e p="EmojiDataAssets" t="Include">
+              <e p="Sheets" t="Include">
+                <e p="EmojiData.txt" t="Include" />
+                <e p="texturepacker_EmojiData.txt" t="Include" />
+              </e>
+            </e>
+            <e p="Readme.txt" t="Include" />
+            <e p="Scripts" t="Include">
+              <e p="Editor" t="Include">
+                <e p="ConvertEmojiDataToTexturePackerJsonEditor.cs" t="Include" />
+                <e p="SimpleJsonParser.cs" t="Include" />
+                <e p="TMP_EmojiTextUGUIEditor.cs" t="Include" />
+              </e>
+              <e p="SearchApi" t="Include">
+                <e p="TMP_EmojiSearchEngine.cs" t="Include" />
+              </e>
+              <e p="TMP_EmojiTextUGUI.cs" t="Include" />
+            </e>
+          </e>
+          <e p="MainMenu" t="Include">
+            <e p="MainMenu_AutoPlayMusic.cs" t="Include" />
+            <e p="MainMenu_Buttons.cs" t="Include" />
+          </e>
+          <e p="ModManager" t="Include">
+            <e p="ModifiedMonoCsharp.cs" t="Include" />
+            <e p="ModManager.cs" t="Include" />
+          </e>
+          <e p="Multiplayer" t="Include">
+            <e p="ForgeExtension.cs" t="Include" />
+            <e p="Multiplayer_Logic.cs" t="Include" />
+            <e p="Player_Network.cs" t="Include" />
+            <e p="World_Network.cs" t="Include" />
+          </e>
+          <e p="Settings" t="Include">
+            <e p="Settings.cs" t="Include" />
+            <e p="SliderToText.cs" t="Include" />
+          </e>
+          <e p="Tayx" t="Include">
+            <e p="Graphy - Ultimate Stats Monitor" t="Include">
+              <e p="Changelog.txt" t="Include" />
+              <e p="Font" t="Include">
+                <e p="Northwest-Bold" t="Include">
+                  <e p="ERIC-TIRADO-NORTHWEST-LICENSE.txt" t="Include" />
+                </e>
+                <e p="Roboto" t="Include">
+                  <e p="LICENSE.txt" t="Include" />
+                </e>
+              </e>
+              <e p="Scene" t="Include">
+                <e p="Color picker" t="Include">
+                  <e p="G_CUIColorPicker.cs" t="Include" />
+                </e>
+                <e p="Customization Scripts" t="Include">
+                  <e p="CustomizeGraphy.cs" t="Include" />
+                  <e p="ForceSliderToMultipleOf3.cs" t="Include" />
+                  <e p="ForceSliderToPowerOf2.cs" t="Include" />
+                  <e p="UpdateTextWithSliderValue.cs" t="Include" />
+                </e>
+              </e>
+              <e p="Scripts" t="Include">
+                <e p="Advanced" t="Include">
+                  <e p="G_AdvancedData.cs" t="Include" />
+                </e>
+                <e p="Audio" t="Include">
+                  <e p="G_AudioGraph.cs" t="Include" />
+                  <e p="G_AudioManager.cs" t="Include" />
+                  <e p="G_AudioMonitor.cs" t="Include" />
+                  <e p="G_AudioText.cs" t="Include" />
+                </e>
+                <e p="Editor" t="Include">
+                  <e p="GraphyDebuggerEditor.cs" t="Include" />
+                  <e p="GraphyManagerEditor.cs" t="Include" />
+                </e>
+                <e p="Fps" t="Include">
+                  <e p="G_FpsGraph.cs" t="Include" />
+                  <e p="G_FpsManager.cs" t="Include" />
+                  <e p="G_FpsMonitor.cs" t="Include" />
+                  <e p="G_FpsText.cs" t="Include" />
+                </e>
+                <e p="Graph" t="Include">
+                  <e p="G_Graph.cs" t="Include" />
+                </e>
+                <e p="GraphyDebugger.cs" t="Include" />
+                <e p="GraphyManager.cs" t="Include" />
+                <e p="Ram" t="Include">
+                  <e p="G_RamGraph.cs" t="Include" />
+                  <e p="G_RamManager.cs" t="Include" />
+                  <e p="G_RamMonitor.cs" t="Include" />
+                  <e p="G_RamText.cs" t="Include" />
+                </e>
+                <e p="Shader" t="Include">
+                  <e p="G_GraphShader.cs" t="Include" />
+                </e>
+                <e p="UI" t="Include">
+                  <e p="IModifiableState.cs" t="Include" />
+                  <e p="IMovable.cs" t="Include" />
+                </e>
+                <e p="Util" t="Include">
+                  <e p="G_ExtensionMethods.cs" t="Include" />
+                  <e p="G_FloatString.cs" t="Include" />
+                  <e p="G_Intstring.cs" t="Include" />
+                  <e p="G_Singleton.cs" t="Include" />
+                </e>
+              </e>
+              <e p="Shaders" t="Include">
+                <e p="GraphMobile.shader" t="Include" />
+                <e p="GraphStandard.shader" t="Include" />
+              </e>
+            </e>
+          </e>
+          <e p="Testing" t="Include">
+            <e p="bomb.cs" t="Include" />
+            <e p="EditTerrain.cs" t="Include" />
+            <e p="Modify.cs" t="Include" />
+          </e>
+          <e p="UI" t="Include">
+            <e p="AttunementAnimations.cs" t="Include" />
+            <e p="MainMenu_Navigation.cs" t="Include" />
+            <e p="UI_Text_Fadeout.cs" t="Include" />
+            <e p="UIParticlesHidden.shader" t="Include" />
+            <e p="UIParticleSystem.cs" t="Include" />
+          </e>
+          <e p="Voxels" t="Include">
+            <e p="ChunkManager.cs" t="Include" />
+            <e p="Clouds.cs" t="Include" />
+            <e p="MeshData.cs" t="Include" />
+            <e p="VoxelEntity.cs" t="Include" />
+            <e p="World" t="Include">
+              <e p="Block.cs" t="Include" />
+              <e p="Chunk.cs" t="Include" />
+              <e p="ChunkLoading.cs" t="Include" />
+              <e p="Schematics.cs" t="Include" />
+              <e p="World.cs" t="Include" />
+            </e>
+            <e p="WorldGen" t="Include">
+              <e p="WorldGen.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Shaders" t="Include">
+          <e p="Spells" t="Include">
+            <e p="Fire" t="Include">
+              <e p="Explosion" t="Include">
+                <e p="Spells_Fire_Explosion_Test.cs" t="Include" />
+              </e>
+            </e>
+          </e>
+        </e>
+        <e p="TextMesh Pro" t="Include">
+          <e p="Fonts" t="Include">
+            <e p="LiberationSans - OFL.txt" t="Include" />
+          </e>
+          <e p="Resources" t="Include">
+            <e p="LineBreaking Following Characters.txt" t="Include" />
+            <e p="LineBreaking Leading Characters.txt" t="Include" />
+            <e p="Shaders" t="Include">
+              <e p="TMP_Bitmap-Custom-Atlas.shader" t="Include" />
+              <e p="TMP_Bitmap-Mobile.shader" t="Include" />
+              <e p="TMP_Bitmap.shader" t="Include" />
+              <e p="TMP_SDF Overlay.shader" t="Include" />
+              <e p="TMP_SDF-Mobile Masking.shader" t="Include" />
+              <e p="TMP_SDF-Mobile Overlay.shader" t="Include" />
+              <e p="TMP_SDF-Mobile.shader" t="Include" />
+              <e p="TMP_SDF-Surface-Mobile.shader" t="Include" />
+              <e p="TMP_SDF-Surface.shader" t="Include" />
+              <e p="TMP_SDF.shader" t="Include" />
+              <e p="TMP_Sprite.shader" t="Include" />
+              <e p="TMPro.cginc" t="Include" />
+              <e p="TMPro_Properties.cginc" t="Include" />
+              <e p="TMPro_Surface.cginc" t="Include" />
+            </e>
+          </e>
+          <e p="Sprites" t="Include">
+            <e p="EmojiOne Attribution.txt" t="Include" />
+          </e>
+        </e>
+      </e>
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="Packages" t="ExcludeRecursive" />
+      <e p="Temp\bin" t="ExcludeRecursive" />
+      <e p="VoxKrieg.sln" t="IncludeFlat" />
+    </e>
+  </component>
+</project>

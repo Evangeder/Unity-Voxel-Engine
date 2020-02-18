@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Unity.Mathematics;
 
 public static class EditTerrain
 {
-    public static WorldPos GetBlockPos(Vector3 pos)
+    public static int3 GetBlockPos(Vector3 pos)
     {
-        WorldPos blockPos = new WorldPos(
+        int3 blockPos = new int3(
             Mathf.RoundToInt(pos.x),
             Mathf.RoundToInt(pos.y),
             Mathf.RoundToInt(pos.z)
@@ -14,7 +15,7 @@ public static class EditTerrain
         return blockPos;
     }
 
-    public static WorldPos GetBlockPos(RaycastHit hit, bool adjacent = false)
+    public static int3 GetBlockPos(RaycastHit hit, bool adjacent = false)
     {
         Vector3 pos = new Vector3(
             MoveWithinBlock(hit.point.x, hit.normal.x, adjacent),
@@ -42,7 +43,7 @@ public static class EditTerrain
         return (float)pos;
     }
 
-    public static bool SetBlock(RaycastHit hit, Block block, bool adjacent = false, bool UsePhysics = false)
+    public static bool SetBlock(RaycastHit hit, BlockMetadata metadata, bool adjacent = false, bool UsePhysics = false)
     {
         Chunk chunk = hit.collider.GetComponent<Chunk>();
         if (chunk == null)
@@ -50,22 +51,22 @@ public static class EditTerrain
             return false;
         }
 
-        WorldPos pos = GetBlockPos(hit, adjacent);
+        int3 pos = GetBlockPos(hit, adjacent);
 
-        chunk.world.SetBlock(pos.x, pos.y, pos.z, block, 0, UsePhysics);
+        chunk.world.SetBlock(pos.x, pos.y, pos.z, metadata);
 
         return true;
     }
 
-    public static Block GetBlock(RaycastHit hit, bool adjacent = false)
+    public static BlockMetadata GetBlock(RaycastHit hit, bool adjacent = false)
     {
         Chunk chunk = hit.collider.GetComponent<Chunk>();
         if (chunk == null)
-            return BlockData.byID[0];
+            return new BlockMetadata { MarchedValue = 0, Switches = BlockSwitches.None, ID = 0 };
 
-        WorldPos pos = GetBlockPos(hit, adjacent);
+        int3 pos = GetBlockPos(hit, adjacent);
 
-        Block block = chunk.world.GetBlock(pos.x, pos.y, pos.z);
+        BlockMetadata block = chunk.world.GetBlock(pos.x, pos.y, pos.z);
 
         return block;
     }

@@ -31,7 +31,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - Texture2D_CC161B26:
-        m_Texture: {fileID: 2800000, guid: fd77aa8b250221c4588487bd1ab33c22, type: 3}
+        m_Texture: {fileID: 2800000, guid: 4aa200239c45f294190944de1e75cd2c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _AnisotropyMap:
@@ -87,7 +87,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HeightMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 7deb92d485b79914ca665e5e26e1061c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _IridescenceMaskMap:
@@ -115,6 +115,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMapOS:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normals:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -173,10 +177,12 @@ Material:
     - Vector1_8AD56012: 0
     - Vector1_8F00C6DE: 0
     - Vector1_AEC6138D: 4
+    - Vector1_AEC6CDEF: 50
     - Vector1_B23E21B5: 0
     - Vector1_C707049: 4
-    - Vector1_CA5C539E: 0.5
+    - Vector1_CA5C539E: 0.49
     - Vector1_DD579AF9: 1
+    - Vector1_DE164EBA: 4.4
     - Vector1_DFCC64E6: 1
     - Vector1_E1FC193D: 0
     - Vector1_F48E08E9: 1

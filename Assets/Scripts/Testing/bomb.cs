@@ -16,7 +16,7 @@ public class bomb : MonoBehaviour
         if(collision.transform.name.Contains("Chunk"))
         {
             World world = GameObject.Find("World").GetComponent<World>();
-            Block WorkerBlock;
+            BlockMetadata WorkerBlock = default;
             int3 coords = new int3((int)math.floor(transform.localPosition.x), (int)math.floor(transform.localPosition.y), (int)math.floor(transform.localPosition.z));
             float R = math.sqrt(math.pow(3, 2) + math.pow(3, 2) + math.pow(3, 2));
 
@@ -28,7 +28,7 @@ public class bomb : MonoBehaviour
                     {
                         if ((math.pow(ix, 2) + math.pow(iy, 2) + math.pow(iz, 2)) < (math.pow(R, 2)))
                         {
-                            WorkerBlock = BlockData.byID[0];
+                            WorkerBlock.ID = 0;
                             world.SetBlock(coords.x + (int)ix, coords.y + (int)iy, coords.z + (int)iz, WorkerBlock);
                         }
                     }
