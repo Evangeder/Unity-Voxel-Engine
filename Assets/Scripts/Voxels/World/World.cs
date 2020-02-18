@@ -11,7 +11,26 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEditor;
 using UnityEngine;
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(World))]
+public class WorldEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        World myScript = (World)target;
+        if (GUILayout.Button("Reset physics queue"))
+        {
+            Debug.Log($"Physics queue cleared, contained {PhysicsQueue.priorityQueue.Count} items");
+            PhysicsQueue.priorityQueue.Clear();
+        }
+    }
+}
+#endif
 
 public class World : MonoBehaviour
 {
@@ -72,6 +91,7 @@ public class World : MonoBehaviour
 
     void Awake()
     {
+        BlockData.world = this;
         rand = new Unity.Mathematics.Random((uint)Guid.NewGuid().GetHashCode());
         WorldSeed = new float2(rand.NextFloat2(0f, 100f));
         Schematics.world = this;
@@ -80,6 +100,8 @@ public class World : MonoBehaviour
         MapLoadInfo = "Connecting...";
 
         StartCoroutine(UpdateChunkQueue());
+
+        StartCoroutine(PhysicsQueue.PhysicsQueueIterator());
     }
 
     void OnDestroy()
@@ -359,7 +381,7 @@ public class World : MonoBehaviour
 
     public void Update()
     {
-        debugCMcount.text = $"Buffer data:\nType: {ChunkManager.GetType}\nAllocated space: {ChunkManager.Length}/{ChunkManager.Max}\nCurrently stored: {ChunkManager.Count}\nTotal chunks allocated: {ChunkManager.ObjectCount}";
+        debugCMcount.text = $"Buffer data:\nType: {ChunkManager.GetType}\nAllocated space: {ChunkManager.Length}/{ChunkManager.Max}\nCurrently stored: {ChunkManager.Count}\nTotal chunks allocated: {ChunkManager.ObjectCount}\n\nPhysics Queue: {PhysicsQueue.priorityQueue.Count}";
         if (GUI_MapLoadingText != null && GUI_MapLoadingText.text != MapLoadInfo) GUI_MapLoadingText.text = MapLoadInfo;
         if (GenerateClouds && AnimateClouds && !isAnimating) StartCoroutine(UpdateClouds());
     }
@@ -474,7 +496,7 @@ public class World : MonoBehaviour
         }
         else
         {
-            return new BlockMetadata { ID = 0, Switches = BlockSwitches.Marched, MarchedValue = 0 };
+            return new BlockMetadata { ID = 0, Switches = BlockSwitches.None, MarchedValue = 0 };
         }
 
     }
@@ -489,7 +511,7 @@ public class World : MonoBehaviour
         Chunk chunk = GetChunk(x, y, z);
 
         // Check if the block was placed via network to prevent echoing
-        if (!FromNetwork) Networking.SetBlock_Caller(x, y, z, blockMetadata);
+        if (!FromNetwork) Networking.SetBlock_Caller(x, y, z, blockMetadata, UpdateMode);
 
         if (chunk != null)
         {
@@ -520,9 +542,10 @@ public class World : MonoBehaviour
     #endregion
 }
 
-public enum BlockUpdateMode
+public enum BlockUpdateMode : byte
 {
     ForceUpdate = 0,
     Queue,
+    Silent,
     None
 }

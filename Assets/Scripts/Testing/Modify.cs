@@ -10,11 +10,9 @@ using Random = UnityEngine.Random;
 [RequireComponent(typeof(AudioSource))]
 public class Modify : MonoBehaviour
 {
-
     private World_Network worldnetwork;
 
     public GameObject CameraParent;
-
 
     Vector2 rot;
     public GameObject Cam;
@@ -48,7 +46,7 @@ public class Modify : MonoBehaviour
     int buildmode = 0;
     int buildmode2brushsize = 0;
 
-    float timer, doubleTapSpacebarTimer, doubleTapWTimer, flyspeed = 10f;
+    float timer, doubleTapSpacebarTimer, doubleTapWTimer, flyspeed = 5f;
     bool flymode = true, Loaded = false;
 
     bool nouimode = false;
@@ -257,7 +255,7 @@ public class Modify : MonoBehaviour
 
                                 if (Input.GetKey(KeyCode.LeftShift))
                                 {
-                                    BlockMetadata WorkerBlock = new BlockMetadata(BlockID, true, 254);
+                                    BlockMetadata WorkerBlock = new BlockMetadata(BlockID, BlockSwitches.Marched, 254);
                                     if (BlockData.BlockSounds[BlockID].Count > 0)
                                         _audioSource.PlayOneShot(BlockData.BlockSounds[BlockID][Random.Range(0, BlockData.BlockSounds[BlockID].Count - 1)]);
                                     EditTerrain.SetBlock(hit, WorkerBlock, false, false);
@@ -266,7 +264,7 @@ public class Modify : MonoBehaviour
                                 {
                                     if (BlockData.BlockSounds[BlockID].Count > 0)
                                         _audioSource.PlayOneShot(BlockData.BlockSounds[BlockID][Random.Range(0, BlockData.BlockSounds[BlockID].Count - 1)]);
-                                    EditTerrain.SetBlock(hit, new BlockMetadata(BlockID, false, 0), false, false);
+                                    EditTerrain.SetBlock(hit, new BlockMetadata(BlockID, BlockSwitches.None, 0), false, false);
                                 }
                             }
 
@@ -406,7 +404,7 @@ public class Modify : MonoBehaviour
                                     }
                                     else if (WorkerBlock.GetMarchedValue() > 0.5f && WorkerBlock.ID == 0)
                                     {
-                                        WorkerBlock = new BlockMetadata(1, true, 0.501f);
+                                        WorkerBlock = new BlockMetadata(1, BlockSwitches.Marched, 0.501f);
                                         EditTerrain.SetBlock(hit, WorkerBlock, false, false);
                                     }
                                     else
@@ -462,7 +460,7 @@ public class Modify : MonoBehaviour
                                                     if (WorkerBlock.MarchedValue < 128)
                                                     {
                                                         float tempmarch = WorkerBlock.MarchedValue;
-                                                        WorkerBlock = new BlockMetadata(0, true, tempmarch);
+                                                        WorkerBlock = new BlockMetadata(0, BlockSwitches.Marched, tempmarch);
                                                         EditTerrain.SetBlock(hit, WorkerBlock, false, false);
                                                     }
                                                     else
@@ -495,24 +493,23 @@ public class Modify : MonoBehaviour
                                     }
                                     else
                                     {
-                                        EditTerrain.SetBlock(hit, new BlockMetadata(0, false, 0), false, false);
+                                        EditTerrain.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false, false);
                                     }
                                 }
                             }
                         }
 
-
                         if (Input.GetMouseButtonDown(0) && buildmode == 0)
                         {
                             int3 blockpos = EditTerrain.GetBlockPos(hit);
                             if (BlockData.byID[world.GetBlock(blockpos.x, blockpos.y + 1, blockpos.z).ID].Foliage)
-                                world.SetBlock(blockpos.x, blockpos.y + 1, blockpos.z, new BlockMetadata(0, false, 0));
+                                world.SetBlock(blockpos.x, blockpos.y + 1, blockpos.z, new BlockMetadata(0, BlockSwitches.None, 0));
                             else
                             {
                                 BlockMetadata b = EditTerrain.GetBlock(hit);
                                 if (BlockData.BlockSounds[b.ID].Count > 0)
                                     _audioSource.PlayOneShot(BlockData.BlockSounds[b.ID][Random.Range(0, BlockData.BlockSounds[b.ID].Count - 1)]);
-                                EditTerrain.SetBlock(hit, new BlockMetadata(0, false, 0), false, true);
+                                EditTerrain.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false, true);
                             }
                         }
                     }
@@ -520,8 +517,6 @@ public class Modify : MonoBehaviour
                     {
                         SelectionVisualisationGO.SetActive(false);
                     }
-
-
 
                     if (Cursor.lockState == CursorLockMode.Locked)
                     {
@@ -536,7 +531,7 @@ public class Modify : MonoBehaviour
 
                         //if (Input.GetKey(KeyCode.LeftShift)) speed = 20f;
                         //if (Input.GetKey(KeyCode.LeftControl)) speed = 30f;
-                        if (flyspeed < 10f) flyspeed = 10f;
+                        if (flyspeed < 5f) flyspeed = 5f;
                         
                         if (Input.GetKeyDown(KeyCode.W))
                         {
@@ -551,7 +546,7 @@ public class Modify : MonoBehaviour
 
                         if (Input.GetKeyUp(KeyCode.W))
                         {
-                            flyspeed = 10f;
+                            flyspeed = 5f;
                             GetComponent<Camera>().fieldOfView = 60f;
                         }
                         
@@ -595,26 +590,18 @@ public class Modify : MonoBehaviour
                     if (Input.GetAxis("Mouse ScrollWheel") > 0f && buildmode == 0)
                     { // forward
                         if (BlockID == 1)
-                        {
                             BlockID = (ushort)(BlockData.byID.Count - 1);
-                        }
                         else
-                        {
                             BlockID -= 1;
-                        }
                         PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
                         PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
                     }
                     else if (Input.GetAxis("Mouse ScrollWheel") < 0f && buildmode == 0)
                     { // backwards
                         if (BlockID == BlockData.byID.Count - 1)
-                        {
                             BlockID = 1;
-                        }
                         else
-                        {
                             BlockID += 1;
-                        }
                         PlaceBlockMat.SetTextureScale("_UnlitColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
                         PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
                     }

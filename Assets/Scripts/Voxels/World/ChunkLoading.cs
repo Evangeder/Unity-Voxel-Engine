@@ -935,6 +935,7 @@ public class ChunkLoading : MonoBehaviour
     
     ConcurrentDictionary<int3, Chunk> updateDict = new ConcurrentDictionary<int3, Chunk>();
     World world;
+    System.Diagnostics.Stopwatch stopWatch;
 
     void Start()
     {
@@ -1000,8 +1001,8 @@ public class ChunkLoading : MonoBehaviour
             {
                 if (chunk.BlockchangeQueue.Count > 0 && chunk.isReading == 0 && !chunk.isGenerating && chunk.rendered && !chunk.isRenderQueued)
                 {
-                    Tuple<int, BlockMetadata> tempBlockData = chunk.BlockchangeQueue.Dequeue();
-                    chunk.SetBlock(tempBlockData.Item1, tempBlockData.Item2);
+                    Tuple<int, BlockMetadata, BlockUpdateMode> tempBlockData = chunk.BlockchangeQueue.Dequeue();
+                    chunk.SetBlock(tempBlockData.Item1, tempBlockData.Item2, tempBlockData.Item3);
                 }
             }
             yield return new WaitForEndOfFrame();

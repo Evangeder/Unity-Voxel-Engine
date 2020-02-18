@@ -166,14 +166,14 @@ public class World_Network : WorldNetworkingBehavior
         throw new System.NotImplementedException();
     }
 
-    public void SetBlock_Caller(int x, int y, int z, BlockMetadata metadata)
+    public void SetBlock_Caller(int x, int y, int z, BlockMetadata metadata, BlockUpdateMode blockUpdateMode)
     {
-        networkObject.SendRpc(RPC_SET_BLOCK, Receivers.AllBuffered, x, y, z, metadata.ObjectToByteArray());
+        networkObject.SendRpc(RPC_SET_BLOCK, Receivers.AllBuffered, x, y, z, metadata.ObjectToByteArray(), (byte)blockUpdateMode);
     }
 
     public override void SetBlock(RpcArgs args)
     {
-        world.SetBlock(args.GetNext<int>(), args.GetNext<int>(), args.GetNext<int>(), args.GetNext<byte[]>().ByteArrayToObject<BlockMetadata>(), true);
+        world.SetBlock(args.GetNext<int>(), args.GetNext<int>(), args.GetNext<int>(), args.GetNext<byte[]>().ByteArrayToObject<BlockMetadata>(), true, (BlockUpdateMode)args.GetNext<byte>());
     }
 
     public override void SendMapgen(RpcArgs args)

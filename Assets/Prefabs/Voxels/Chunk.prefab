@@ -64,6 +64,7 @@ MeshRenderer:
   - {fileID: 2100000, guid: 7683731f0ade721499c1f34f9cc2cbb4, type: 2}
   - {fileID: 2100000, guid: 1e9d1a4f8da54064aa26849aa1a6ab94, type: 2}
   - {fileID: 2100000, guid: 1e9d1a4f8da54064aa26849aa1a6ab94, type: 2}
+  - {fileID: 2100000, guid: 73982032fc729fa49a89766e5ba5263f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -117,10 +118,10 @@ MonoBehaviour:
     z: 0
   generated: 0
   isGenerating: 0
-  isReading: 0
   isQueuedForDeletion: 0
+  isRenderQueued: 0
+  isEmpty: 1
+  isReading: 0
   RenderImportance: 0
   LOD: 1
   rendered: 0
-  isMapgenUpdate: 1
-  meshRenderer: {fileID: 0}

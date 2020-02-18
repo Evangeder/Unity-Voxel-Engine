@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace BeardedManStudios.Forge.Networking.Generated
 {
-	[GeneratedRPC("{\"types\":[[\"byte\"][\"byte[]\", \"float\", \"float\"][\"byte[]\", \"byte[]\"][\"byte[]\", \"byte[]\"][\"Vector2\", \"byte\", \"byte\", \"byte\"][\"int\", \"int\", \"int\", \"byte[]\"][\"int\", \"int\", \"int\"][\"int\", \"int\", \"int\", \"byte[]\"][\"byte[]\"]]")]
-	[GeneratedRPCVariableNames("{\"types\":[[\"Byte\"][\"TexturePack\", \"BlockTileSize\", \"TextureSize\"][\"MapgenCode\", \"MapgenName\"][\"BlockData\", \"BlockNames\"][\"Seed\", \"SizeX\", \"SizeY\", \"SizeZ\"][\"X\", \"Y\", \"Z\", \"Block\"][\"\", \"\", \"\"][\"X\", \"Y\", \"Z\", \"Chunk\"][\"\"]]")]
+	[GeneratedRPC("{\"types\":[[\"byte\"][\"byte[]\", \"float\", \"float\"][\"byte[]\", \"byte[]\"][\"byte[]\", \"byte[]\"][\"Vector2\", \"byte\", \"byte\", \"byte\"][\"int\", \"int\", \"int\", \"byte[]\", \"byte\"][\"int\", \"int\", \"int\"][\"int\", \"int\", \"int\", \"byte[]\"][\"byte[]\"]]")]
+	[GeneratedRPCVariableNames("{\"types\":[[\"Byte\"][\"TexturePack\", \"BlockTileSize\", \"TextureSize\"][\"MapgenCode\", \"MapgenName\"][\"BlockData\", \"BlockNames\"][\"Seed\", \"SizeX\", \"SizeY\", \"SizeZ\"][\"X\", \"Y\", \"Z\", \"Block\", \"Mode\"][\"\", \"\", \"\"][\"X\", \"Y\", \"Z\", \"Chunk\"][\"\"]]")]
 	public abstract partial class WorldNetworkingBehavior : NetworkBehavior
 	{
 		public const byte RPC_HANDSHAKE = 0 + 5;
@@ -35,7 +35,7 @@ namespace BeardedManStudios.Forge.Networking.Generated
 			networkObject.RegisterRpc("SendMapgen", SendMapgen, typeof(byte[]), typeof(byte[]));
 			networkObject.RegisterRpc("BlockInit", BlockInit, typeof(byte[]), typeof(byte[]));
 			networkObject.RegisterRpc("CreateWorld", CreateWorld, typeof(Vector2), typeof(byte), typeof(byte), typeof(byte));
-			networkObject.RegisterRpc("SetBlock", SetBlock, typeof(int), typeof(int), typeof(int), typeof(byte[]));
+			networkObject.RegisterRpc("SetBlock", SetBlock, typeof(int), typeof(int), typeof(int), typeof(byte[]), typeof(byte));
 			networkObject.RegisterRpc("GetChunk", GetChunk, typeof(int), typeof(int), typeof(int));
 			networkObject.RegisterRpc("SendChunk", SendChunk, typeof(int), typeof(int), typeof(int), typeof(byte[]));
 			networkObject.RegisterRpc("SendBroadcast", SendBroadcast, typeof(byte[]));
@@ -153,6 +153,7 @@ namespace BeardedManStudios.Forge.Networking.Generated
 		/// int Y
 		/// int Z
 		/// byte[] Block
+		/// byte Mode
 		/// </summary>
 		public abstract void SetBlock(RpcArgs args);
 		/// <summary>
