@@ -1,11 +1,8 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.IO;
 using Unity.Mathematics;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using Random = UnityEngine.Random;
+using VoxaNovus;
+using System.Collections;
 
 [RequireComponent(typeof(AudioSource))]
 public class Modify : MonoBehaviour
@@ -64,6 +61,7 @@ public class Modify : MonoBehaviour
         Options_GO = GameObject.Find("Settings UI");
         Schematics.ErrorLogBuildmode = ErrorLogBuildmode;
         world = GameObject.Find("World").GetComponent<World>();
+        world.PlayerChar = gameObject;
         SelectionVisualisationGO = GameObject.Find("Selection");
         SchemaSelector1 = GameObject.Find("SchematicSelectionCorner1");
         SchemaSelector2 = GameObject.Find("SchematicSelectionCorner2");
@@ -78,25 +76,71 @@ public class Modify : MonoBehaviour
         CanvasObject = GameObject.Find("Canvas");
         CanvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         _audioSource = GetComponent<AudioSource>();
+        SelectionVisualisationGO.transform.localScale = new Vector3(1.2f * BlockSettings.ChunkScale, 1.2f * BlockSettings.ChunkScale, 1.2f * BlockSettings.ChunkScale);
     }
 
     void Start()
     {
         worldnetwork = GameObject.Find("World").GetComponent<World_Network>();
 
-        IniFile Screen_INI = new IniFile("/Mods/Screen.ini");
-        if (Screen_INI.KeyExists("Resolution")) {
-            string[] temp = Screen_INI.Read("Resolution").Split('x');
-            Screen.SetResolution(int.Parse(temp[0]), int.Parse(temp[1]), bool.Parse(Screen_INI.Read("Fullscreen")));
-        } else {
-            Screen_INI.Write("Resolution", "854x480");
-            Screen_INI.Write("Fullscreen", "False");
-            Screen.SetResolution(854, 480, false);
-        }
-        Application.targetFrameRate = 600;
-        QualitySettings.vSyncCount = 1;
+        //IniFile Screen_INI = new IniFile("/Mods/Screen.ini");
+        //if (Screen_INI.KeyExists("Resolution")) {
+        //    string[] temp = Screen_INI.Read("Resolution").Split('x');
+        //    Screen.SetResolution(int.Parse(temp[0]), int.Parse(temp[1]), bool.Parse(Screen_INI.Read("Fullscreen")));
+        //} else {
+        //    Screen_INI.Write("Resolution", "854x480");
+        //    Screen_INI.Write("Fullscreen", "False");
+        //    Screen.SetResolution(854, 480, false);
+        //}
+        //Application.targetFrameRate = 600;
+        //QualitySettings.vSyncCount = 1;
         //Cursor.lockState = CursorLockMode.Locked;
         //Cursor.visible = false;
+        StartCoroutine(spawnBombloop());
+    }
+
+    IEnumerator spawnBombloop()
+    {
+        while (true)
+        {
+            for (int i = 0; i < 5; i++)
+                yield return new WaitForEndOfFrame();
+
+            if (Input.GetKey(KeyCode.F))
+            {
+                GameObject newBomb = Instantiate(Bomb);
+                newBomb.GetComponent<bomb>().world = world;
+                newBomb.transform.localPosition = transform.localPosition;
+                newBomb.transform.position = transform.position;
+                newBomb.transform.rotation = transform.rotation;
+                newBomb.transform.Translate(Vector3.forward * 4f);
+                newBomb.transform.localRotation = transform.localRotation;
+                //newBomb.GetComponent<Rigidbody>().AddForce(new Vector3(5f, 5f, 0f), ForceMode.Impulse);
+                newBomb.GetComponent<Rigidbody>().AddRelativeForce(transform.forward * 20f, ForceMode.Impulse);
+            }
+
+            if (Input.GetKey(KeyCode.Q))
+            {
+                BlockMetadata WorkerBlock = new BlockMetadata(BlockID, BlockSwitches.None, 0);
+
+                float3 poss = new float3(
+                    Cam.transform.position.x / (BlockSettings.ChunkSize * BlockSettings.ChunkScale) * BlockSettings.ChunkSize,
+                    Cam.transform.position.y / (BlockSettings.ChunkSize * BlockSettings.ChunkScale) * BlockSettings.ChunkSize,
+                    Cam.transform.position.z / (BlockSettings.ChunkSize * BlockSettings.ChunkScale) * BlockSettings.ChunkSize);
+
+                float3 final = poss - ChunkLOD.PlayerPosition_int;
+                final *= BlockSettings.ChunkSize;
+                final += ChunkLOD.PlayerPosition_int;
+
+                int3 pos = new int3(
+                    Mathf.FloorToInt(final.x),
+                    Mathf.FloorToInt(final.y) - 2,
+                    Mathf.FloorToInt(final.z)
+                    );
+
+                world.SetBlock(pos, WorkerBlock, false, BlockUpdateMode.ForceUpdate);
+            }
+        }
     }
 
     // Update is called once per frame
@@ -180,6 +224,7 @@ public class Modify : MonoBehaviour
                         PlaceBlockGO.SetActive(true);
                         buildmode = 0;
                         BuildModeInfo.text = "<color=red><b><i>Mode: Block placement.</i></b></color>\nHold shift to place smooth blocks. [LMB] to delete [RMB] to place.\nMousewheel to change material.";
+                        SelectionVisualisationGO.transform.localScale = new Vector3(1.2f * BlockSettings.ChunkScale, 1.2f * BlockSettings.ChunkScale, 1.2f * BlockSettings.ChunkScale);
                     }
                     else if (Input.GetKeyDown(KeyCode.F2))
                     {
@@ -220,298 +265,314 @@ public class Modify : MonoBehaviour
                         BuildModeInfo.text = "<color=yellow><b><i>Mode: Schematic importing</i></b></color>\n [RMB] To paste schematic.";
                     }
 
-                    if (Input.GetKeyDown(KeyCode.F))
-                    {
-                        GameObject newBomb = Instantiate(Bomb);
-                        newBomb.transform.localPosition = transform.localPosition;
-                        newBomb.transform.rotation = transform.rotation;
-                        newBomb.transform.Translate(Vector3.forward * 4f);
-                        newBomb.transform.localRotation = transform.localRotation;
-                        //newBomb.GetComponent<Rigidbody>().AddForce(new Vector3(5f, 5f, 0f), ForceMode.Impulse);
-                        newBomb.GetComponent<Rigidbody>().AddRelativeForce(transform.forward * 20f, ForceMode.Impulse);
-                    }
+                    //if (Input.GetKeyDown(KeyCode.F))
+                    //{
+                    //    GameObject newBomb = Instantiate(Bomb);
+                    //    newBomb.GetComponent<bomb>().world = world;
+                    //    newBomb.transform.localPosition = transform.localPosition;
+                    //    newBomb.transform.position = transform.position;
+                    //    newBomb.transform.rotation = transform.rotation;
+                    //    newBomb.transform.Translate(Vector3.forward * 4f);
+                    //    newBomb.transform.localRotation = transform.localRotation;
+                    //    //newBomb.GetComponent<Rigidbody>().AddForce(new Vector3(5f, 5f, 0f), ForceMode.Impulse);
+                    //    newBomb.GetComponent<Rigidbody>().AddRelativeForce(transform.forward * 20f, ForceMode.Impulse);
+                    //}
 
+                    var layerMask = ~(1 << 10);
                     RaycastHit hit;
-                    if (Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, 100))
+                    if (Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, 100, layerMask))
                     {
-                        if (hit.transform.tag != "MapBorder")
+                        Chunk hitChunk = hit.collider.GetComponent<Chunk>();
+                        if (hitChunk != null)
                         {
-                            SelectionVisualisationGO.SetActive(true);
-                            int3 test = EditTerrain.GetBlockPos(hit, false);
-                            SelectionVisualisationGO.transform.position = new Vector3(test.x, test.y, test.z);
-                        }
-                        else
-                        {
-                            SelectionVisualisationGO.SetActive(false);
-                        }
-
-                        if (Input.GetMouseButtonDown(1) && buildmode == 0)
-                        {
-                            if (Cam.transform.localRotation.x < 0.5f)
+                            if (hit.transform.tag != "MapBorder")
                             {
-                                Vector3 position = hit.point;
-                                position += (hit.normal * 0.5f);
-                                hit.point = position;
-
-                                if (Input.GetKey(KeyCode.LeftShift))
-                                {
-                                    BlockMetadata WorkerBlock = new BlockMetadata(BlockID, BlockSwitches.Marched, 254);
-                                    if (BlockData.BlockSounds[BlockID].Count > 0)
-                                        _audioSource.PlayOneShot(BlockData.BlockSounds[BlockID][Random.Range(0, BlockData.BlockSounds[BlockID].Count - 1)]);
-                                    EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                }
-                                else
-                                {
-                                    if (BlockData.BlockSounds[BlockID].Count > 0)
-                                        _audioSource.PlayOneShot(BlockData.BlockSounds[BlockID][Random.Range(0, BlockData.BlockSounds[BlockID].Count - 1)]);
-                                    EditTerrain.SetBlock(hit, new BlockMetadata(BlockID, BlockSwitches.None, 0), false, false);
-                                }
+                                SelectionVisualisationGO.SetActive(true);
+                                int3 test = BlockRaycast.GetBlockPos(hit, false);
+                                SelectionVisualisationGO.transform.position = new Vector3(test.x * BlockSettings.ChunkScale, test.y * BlockSettings.ChunkScale, test.z * BlockSettings.ChunkScale);
                             }
+                            else
+                                SelectionVisualisationGO.SetActive(false);
 
-                        }
-
-                        if (buildmode == 3)
-                            if (Input.GetMouseButtonDown(0))
+                            if (Input.GetMouseButtonDown(1) && buildmode == 0)
                             {
-                                SchemaSelector1.SetActive(true);
-                                int3 test = EditTerrain.GetBlockPos(hit, false);
-                                SchemaSelector1.transform.position = new Vector3(test.x, test.y, test.z);
-                                SchemaSelection1 = new int3(test.x, test.y, test.z);
-                            }
-                            else if (Input.GetMouseButtonDown(1))
-                            {
-                                SchemaSelector2.SetActive(true);
-                                int3 test = EditTerrain.GetBlockPos(hit, false);
-                                SchemaSelector2.transform.position = new Vector3(test.x, test.y, test.z);
-                                SchemaSelection2 = new int3(test.x, test.y, test.z);
-                            }
-                            else if (Input.GetMouseButtonDown(2))
-                            {
-                                SchemaSelectorOrigin.SetActive(true);
-                                int3 test = EditTerrain.GetBlockPos(hit, false);
-                                SchemaSelectorOrigin.transform.position = new Vector3(test.x, test.y, test.z);
-                                SchemaSelectionOrigin = new int3(test.x, test.y, test.z);
-                            }
-                            else if (Input.GetKeyDown(KeyCode.Return))
-                            {
-                                if (!SchemaSelector1.activeSelf)
+                                if (Cam.transform.localRotation.x < 0.5f)
                                 {
-                                    ErrorLogBuildmode.text = "Missing corner selector (red).";
-                                    Color col = ErrorLogBuildmode.color;
-                                    col.r = 1f; col.g = 0f; col.b = 0f;
-                                    col.a = 1f;
-                                    ErrorLogBuildmode.color = col;
-                                }
-                                if (!SchemaSelector2.activeSelf)
-                                {
-                                    ErrorLogBuildmode.text = "Missing corner selector (green)";
-                                    Color col = ErrorLogBuildmode.color;
-                                    col.r = 1f; col.g = 0f; col.b = 0f;
-                                    col.a = 1f;
-                                    ErrorLogBuildmode.color = col;
-                                }
-                                if (!SchemaSelectorOrigin.activeSelf)
-                                {
-                                    ErrorLogBuildmode.text = "Missing origin selector (blue)";
-                                    Color col = ErrorLogBuildmode.color;
-                                    col.r = 1f; col.g = 0f; col.b = 0f;
-                                    col.a = 1f;
-                                    ErrorLogBuildmode.color = col;
-                                }
-
-                                if (SchemaSelector1.activeSelf && SchemaSelector2.activeSelf && SchemaSelectorOrigin.activeSelf)
-                                {
-                                    StartCoroutine(Schematics.CopySchematicCoroutine(SchemaSelection1, SchemaSelection2, SchemaSelectionOrigin));
-                                }
-                            }
-
-                        if (buildmode == 4)
-                            if (Input.GetMouseButtonDown(1))
-                            {
-                                StartCoroutine(Schematics.PasteSchematicCoroutine(hit));
-                            }
-
-                        if (Input.GetMouseButton(1) && buildmode == 1 && timer <= 0f)
-                        {
-                            if (Cam.transform.localRotation.x < 0.5f)
-                            {
-                                Vector3 position = hit.point;
-                                position += (hit.normal * 0.5f);
-                                BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
-
-                                
-                                if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
-                                {
-                                    if (WorkerBlock.GetMarchedValue() < 1f)
-                                    {
-                                        byte newmarchval = WorkerBlock.MarchedValue;
-                                        if (Input.GetKey(KeyCode.LeftShift))
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 13 > 254 ? 254 : WorkerBlock.MarchedValue + 13);
-                                        else if (Input.GetKey(KeyCode.LeftControl))
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 38 > 254 ? 254 : WorkerBlock.MarchedValue + 38);
-                                        else
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 1 > 254 ? 254 : WorkerBlock.MarchedValue + 1);
-
-                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                        timer = 1f;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (Input.GetMouseButton(0) && buildmode == 1 && timer <= 0f)
-                        {
-                            BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
-                            if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
-                            {
-                                if (WorkerBlock.GetMarchedValue() > 0.501f)
-                                {
-                                    if (Input.GetKey(KeyCode.LeftShift))
-                                        WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 13 < 130 ? 130 : WorkerBlock.MarchedValue - 13);
-                                    else if (Input.GetKey(KeyCode.LeftControl))
-                                        WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 38 < 130 ? 130 : WorkerBlock.MarchedValue - 38);
-                                    else
-                                        WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 1 < 130 ? 130 : WorkerBlock.MarchedValue - 1);
-
-                                    if (WorkerBlock.MarchedValue < 128) WorkerBlock.MarchedValue = 128;
-                                    EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                    timer = 1f;
-                                }
-                            }
-                        }
-
-
-                        if (Input.GetMouseButton(1) && buildmode == 2 && timer <= 0f)
-                        {
-                            if (Cam.transform.localRotation.x < 0.5f)
-                            {
-                                Vector3 position = hit.point;
-                                BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
-
-                                if ((WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched || WorkerBlock.ID == 0)
-                                {
-                                    if (WorkerBlock.GetMarchedValue() < 1f)
-                                    {
-                                        if (Input.GetKey(KeyCode.LeftShift))
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 38 > 254 ? 254 : WorkerBlock.MarchedValue + 38);
-                                        else if (Input.GetKey(KeyCode.LeftControl))
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 64 > 254 ? 254 : WorkerBlock.MarchedValue + 64);
-                                        else
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 13 > 254 ? 254 : WorkerBlock.MarchedValue + 13);
-
-                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                        timer = 1f;
-                                    }
-                                    else if (WorkerBlock.GetMarchedValue() > 0.5f && WorkerBlock.ID == 0)
-                                    {
-                                        WorkerBlock = new BlockMetadata(1, BlockSwitches.Marched, 0.501f);
-                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                    }
-                                    else
-                                    {
-                                        position += (hit.normal * 0.5f);
-                                        hit.point = position;
-                                        WorkerBlock.MarchedValue = 128;
-                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                    }
-                                }
-                                else if (WorkerBlock.ID == 0)
-                                {
+                                    Vector3 position = hit.point;
                                     position += (hit.normal * 0.5f);
                                     hit.point = position;
-                                    WorkerBlock.MarchedValue = 128;
-                                    EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                }
-                            }
-                        }
 
-                        if (Input.GetMouseButton(0) && buildmode == 2 && timer <= 0f)
-                        {
-                            BlockMetadata WorkerBlock = EditTerrain.GetBlock(hit, false);
-                            Vector3 position = hit.point;
-                            //position += (hit.normal * 0.5f);
-
-                            if (buildmode2brushsize > 0)
-                            {
-                                for (int x = -buildmode2brushsize; x <= buildmode2brushsize; x++)
-                                {
-                                    for (int y = -buildmode2brushsize; y <= buildmode2brushsize; y++)
+                                    if (Input.GetKey(KeyCode.LeftShift))
                                     {
-                                        for (int z = -buildmode2brushsize; z <= buildmode2brushsize; z++)
+                                        
+                                        layerMask = 1 << 10;
+                                        if (Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, 100, layerMask))
                                         {
-                                            hit.point = new Vector3(position.x + x, position.y + y, position.z + z);
-                                            WorkerBlock = EditTerrain.GetBlock(hit, false);
+                                            position = hit.point;
+                                            position += (hit.normal * 0.5f);
+                                            hit.point = position;
 
-                                            float calculatedmarch = 0.15f - x / 50 - y / 50 - z / 50;
-                                            if (calculatedmarch < 0.1f) calculatedmarch = 0.1f;
+                                            BlockMetadata WorkerBlock = new BlockMetadata(BlockID, BlockSwitches.Marched, 254);
 
-                                            if (WorkerBlock.ID == 0 || (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
-                                            {
+                                            if (BlockSettings.BlockSounds[BlockID].Count > 0)
+                                                _audioSource.PlayOneShot(BlockSettings.BlockSounds[BlockID][Random.Range(0, BlockSettings.BlockSounds[BlockID].Count - 1)]);
+                                            BlockRaycast.SetBlock(hitChunk, hit, WorkerBlock, false);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (BlockSettings.BlockSounds[BlockID].Count > 0)
+                                            _audioSource.PlayOneShot(BlockSettings.BlockSounds[BlockID][Random.Range(0, BlockSettings.BlockSounds[BlockID].Count - 1)]);
+                                        BlockRaycast.SetBlock(hit, new BlockMetadata(BlockID, BlockSwitches.None, 0), false);
+                                    }
+                                }
 
-                                                if (WorkerBlock.MarchedValue > 0)
-                                                {
-                                                    if (Input.GetKey(KeyCode.LeftShift))
-                                                        WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 38 < 0 ? 0 : WorkerBlock.MarchedValue - 38);
-                                                    else if (Input.GetKey(KeyCode.LeftControl))
-                                                        WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 64 < 0 ? 0 : WorkerBlock.MarchedValue - 64);
-                                                    else
-                                                        WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 13 < 0 ? 0 : WorkerBlock.MarchedValue - 13);
+                            }
 
-                                                    if (WorkerBlock.MarchedValue < 128)
-                                                    {
-                                                        float tempmarch = WorkerBlock.MarchedValue;
-                                                        WorkerBlock = new BlockMetadata(0, BlockSwitches.Marched, tempmarch);
-                                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                                    }
-                                                    else
-                                                    {
-                                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
-                                                    }
+                            if (buildmode == 3)
+                                if (Input.GetMouseButtonDown(0))
+                                {
+                                    SchemaSelector1.SetActive(true);
+                                    int3 test = BlockRaycast.GetBlockPos(hit, false);
+                                    SchemaSelector1.transform.position = new Vector3(test.x, test.y, test.z);
+                                    SchemaSelection1 = new int3(test.x, test.y, test.z);
+                                }
+                                else if (Input.GetMouseButtonDown(1))
+                                {
+                                    SchemaSelector2.SetActive(true);
+                                    int3 test = BlockRaycast.GetBlockPos(hit, false);
+                                    SchemaSelector2.transform.position = new Vector3(test.x, test.y, test.z);
+                                    SchemaSelection2 = new int3(test.x, test.y, test.z);
+                                }
+                                else if (Input.GetMouseButtonDown(2))
+                                {
+                                    SchemaSelectorOrigin.SetActive(true);
+                                    int3 test = BlockRaycast.GetBlockPos(hit, false);
+                                    SchemaSelectorOrigin.transform.position = new Vector3(test.x, test.y, test.z);
+                                    SchemaSelectionOrigin = new int3(test.x, test.y, test.z);
+                                }
+                                else if (Input.GetKeyDown(KeyCode.Return))
+                                {
+                                    if (!SchemaSelector1.activeSelf)
+                                    {
+                                        ErrorLogBuildmode.text = "Missing corner selector (red).";
+                                        Color col = ErrorLogBuildmode.color;
+                                        col.r = 1f; col.g = 0f; col.b = 0f;
+                                        col.a = 1f;
+                                        ErrorLogBuildmode.color = col;
+                                    }
+                                    if (!SchemaSelector2.activeSelf)
+                                    {
+                                        ErrorLogBuildmode.text = "Missing corner selector (green)";
+                                        Color col = ErrorLogBuildmode.color;
+                                        col.r = 1f; col.g = 0f; col.b = 0f;
+                                        col.a = 1f;
+                                        ErrorLogBuildmode.color = col;
+                                    }
+                                    if (!SchemaSelectorOrigin.activeSelf)
+                                    {
+                                        ErrorLogBuildmode.text = "Missing origin selector (blue)";
+                                        Color col = ErrorLogBuildmode.color;
+                                        col.r = 1f; col.g = 0f; col.b = 0f;
+                                        col.a = 1f;
+                                        ErrorLogBuildmode.color = col;
+                                    }
 
-                                                    timer = 1f;
-                                                }
-                                            }
+                                    if (SchemaSelector1.activeSelf && SchemaSelector2.activeSelf && SchemaSelectorOrigin.activeSelf)
+                                    {
+                                        StartCoroutine(Schematics.CopySchematicCoroutine(SchemaSelection1, SchemaSelection2, SchemaSelectionOrigin));
+                                    }
+                                }
+
+                            if (buildmode == 4)
+                                if (Input.GetMouseButtonDown(1))
+                                {
+                                    StartCoroutine(Schematics.PasteSchematicCoroutine(hit));
+                                }
+
+                            if (Input.GetMouseButton(1) && buildmode == 1 && timer <= 0f)
+                            {
+                                if (Cam.transform.localRotation.x < 0.5f)
+                                {
+                                    Vector3 position = hit.point;
+                                    position += (hit.normal * 0.5f);
+                                    BlockMetadata WorkerBlock = BlockRaycast.GetBlock(hit, false);
+
+
+                                    if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
+                                    {
+                                        if (WorkerBlock.GetMarchedValue() < 1f)
+                                        {
+                                            byte newmarchval = WorkerBlock.MarchedValue;
+                                            if (Input.GetKey(KeyCode.LeftShift))
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 13 > 254 ? 254 : WorkerBlock.MarchedValue + 13);
+                                            else if (Input.GetKey(KeyCode.LeftControl))
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 38 > 254 ? 254 : WorkerBlock.MarchedValue + 38);
+                                            else
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 1 > 254 ? 254 : WorkerBlock.MarchedValue + 1);
+
+                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                            timer = 1f;
                                         }
                                     }
                                 }
                             }
-                            else
+
+                            if (Input.GetMouseButton(0) && buildmode == 1 && timer <= 0f)
                             {
+                                BlockMetadata WorkerBlock = BlockRaycast.GetBlock(hit, false);
                                 if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
                                 {
                                     if (WorkerBlock.GetMarchedValue() > 0.501f)
                                     {
                                         if (Input.GetKey(KeyCode.LeftShift))
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 38 < 128 ? 128 : WorkerBlock.MarchedValue - 38);
+                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 13 < 130 ? 130 : WorkerBlock.MarchedValue - 13);
                                         else if (Input.GetKey(KeyCode.LeftControl))
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 64 < 128 ? 128 : WorkerBlock.MarchedValue - 64);
+                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 38 < 130 ? 130 : WorkerBlock.MarchedValue - 38);
                                         else
-                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 13 < 128 ? 128 : WorkerBlock.MarchedValue - 13);
+                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 1 < 130 ? 130 : WorkerBlock.MarchedValue - 1);
 
-                                        EditTerrain.SetBlock(hit, WorkerBlock, false, false);
+                                        if (WorkerBlock.MarchedValue < 128) WorkerBlock.MarchedValue = 128;
+                                        BlockRaycast.SetBlock(hit, WorkerBlock, false);
                                         timer = 1f;
-                                    }
-                                    else
-                                    {
-                                        EditTerrain.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false, false);
                                     }
                                 }
                             }
-                        }
 
-                        if (Input.GetMouseButtonDown(0) && buildmode == 0)
-                        {
-                            int3 blockpos = EditTerrain.GetBlockPos(hit);
-                            if (BlockData.byID[world.GetBlock(blockpos.x, blockpos.y + 1, blockpos.z).ID].Foliage)
-                                world.SetBlock(blockpos.x, blockpos.y + 1, blockpos.z, new BlockMetadata(0, BlockSwitches.None, 0));
-                            else
+
+                            if (Input.GetMouseButton(1) && buildmode == 2 && timer <= 0f)
                             {
-                                BlockMetadata b = EditTerrain.GetBlock(hit);
-                                if (BlockData.BlockSounds[b.ID].Count > 0)
-                                    _audioSource.PlayOneShot(BlockData.BlockSounds[b.ID][Random.Range(0, BlockData.BlockSounds[b.ID].Count - 1)]);
-                                EditTerrain.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false, true);
+                                if (Cam.transform.localRotation.x < 0.5f)
+                                {
+                                    Vector3 position = hit.point;
+                                    BlockMetadata WorkerBlock = BlockRaycast.GetBlock(hit, false);
+
+                                    if ((WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched || WorkerBlock.ID == 0)
+                                    {
+                                        if (WorkerBlock.GetMarchedValue() < 1f)
+                                        {
+                                            if (Input.GetKey(KeyCode.LeftShift))
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 38 > 254 ? 254 : WorkerBlock.MarchedValue + 38);
+                                            else if (Input.GetKey(KeyCode.LeftControl))
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 64 > 254 ? 254 : WorkerBlock.MarchedValue + 64);
+                                            else
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue + 13 > 254 ? 254 : WorkerBlock.MarchedValue + 13);
+
+                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                            timer = 1f;
+                                        }
+                                        else if (WorkerBlock.GetMarchedValue() > 0.5f && WorkerBlock.ID == 0)
+                                        {
+                                            WorkerBlock = new BlockMetadata(1, BlockSwitches.Marched, 0.501f);
+                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                        }
+                                        else
+                                        {
+                                            position += (hit.normal * 0.5f);
+                                            hit.point = position;
+                                            WorkerBlock.MarchedValue = 128;
+                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                        }
+                                    }
+                                    else if (WorkerBlock.ID == 0)
+                                    {
+                                        position += (hit.normal * 0.5f);
+                                        hit.point = position;
+                                        WorkerBlock.MarchedValue = 128;
+                                        BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                    }
+                                }
                             }
-                        }
+
+                            if (Input.GetMouseButton(0) && buildmode == 2 && timer <= 0f)
+                            {
+                                BlockMetadata WorkerBlock = BlockRaycast.GetBlock(hit, false);
+                                Vector3 position = hit.point;
+                                //position += (hit.normal * 0.5f);
+
+                                if (buildmode2brushsize > 0)
+                                {
+                                    for (int x = -buildmode2brushsize; x <= buildmode2brushsize; x++)
+                                    {
+                                        for (int y = -buildmode2brushsize; y <= buildmode2brushsize; y++)
+                                        {
+                                            for (int z = -buildmode2brushsize; z <= buildmode2brushsize; z++)
+                                            {
+                                                hit.point = new Vector3(position.x + x, position.y + y, position.z + z);
+                                                WorkerBlock = BlockRaycast.GetBlock(hit, false);
+
+                                                float calculatedmarch = 0.15f - x / 50 - y / 50 - z / 50;
+                                                if (calculatedmarch < 0.1f) calculatedmarch = 0.1f;
+
+                                                if (WorkerBlock.ID == 0 || (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
+                                                {
+
+                                                    if (WorkerBlock.MarchedValue > 0)
+                                                    {
+                                                        if (Input.GetKey(KeyCode.LeftShift))
+                                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 38 < 0 ? 0 : WorkerBlock.MarchedValue - 38);
+                                                        else if (Input.GetKey(KeyCode.LeftControl))
+                                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 64 < 0 ? 0 : WorkerBlock.MarchedValue - 64);
+                                                        else
+                                                            WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 13 < 0 ? 0 : WorkerBlock.MarchedValue - 13);
+
+                                                        if (WorkerBlock.MarchedValue < 128)
+                                                        {
+                                                            float tempmarch = WorkerBlock.MarchedValue;
+                                                            WorkerBlock = new BlockMetadata(0, BlockSwitches.Marched, tempmarch);
+                                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                                        }
+                                                        else
+                                                        {
+                                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                                        }
+
+                                                        timer = 1f;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (WorkerBlock.ID != 0 && (WorkerBlock.Switches & BlockSwitches.Marched) == BlockSwitches.Marched)
+                                    {
+                                        if (WorkerBlock.GetMarchedValue() > 0.501f)
+                                        {
+                                            if (Input.GetKey(KeyCode.LeftShift))
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 38 < 128 ? 128 : WorkerBlock.MarchedValue - 38);
+                                            else if (Input.GetKey(KeyCode.LeftControl))
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 64 < 128 ? 128 : WorkerBlock.MarchedValue - 64);
+                                            else
+                                                WorkerBlock.MarchedValue = (byte)(WorkerBlock.MarchedValue - 13 < 128 ? 128 : WorkerBlock.MarchedValue - 13);
+
+                                            BlockRaycast.SetBlock(hit, WorkerBlock, false);
+                                            timer = 1f;
+                                        }
+                                        else
+                                        {
+                                            BlockRaycast.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (Input.GetMouseButtonDown(0) && buildmode == 0)
+                            {
+                                int3 blockpos = BlockRaycast.GetBlockPos(hit, true);
+                                if (BlockSettings.byID[world.GetBlock(blockpos.x, blockpos.y + 1, blockpos.z).ID].Foliage)
+                                    world.SetBlock(blockpos.x, blockpos.y + 1, blockpos.z, new BlockMetadata(0, BlockSwitches.None, 0));
+                                else
+                                {
+                                    BlockMetadata b = BlockRaycast.GetBlock(hit, true);
+                                    if (BlockSettings.BlockSounds[b.ID].Count > 0)
+                                        _audioSource.PlayOneShot(BlockSettings.BlockSounds[b.ID][Random.Range(0, BlockSettings.BlockSounds[b.ID].Count - 1)]);
+                                    BlockRaycast.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false);
+                                }
+                            }
+                        } else
+                            SelectionVisualisationGO.SetActive(false);
                     }
                     else
                     {
@@ -590,20 +651,20 @@ public class Modify : MonoBehaviour
                     if (Input.GetAxis("Mouse ScrollWheel") > 0f && buildmode == 0)
                     { // forward
                         if (BlockID == 1)
-                            BlockID = (ushort)(BlockData.byID.Count - 1);
+                            BlockID = (ushort)(BlockSettings.byID.Count - 1);
                         else
                             BlockID -= 1;
-                        PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-                        PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
+                        PlaceBlockMat.SetTextureScale("_BaseColorMap", new Vector2(BlockSettings.BlockTileSize, BlockSettings.BlockTileSize));
+                        PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockSettings.byID[BlockID].Texture_Marched.x * BlockSettings.BlockTileSize, BlockSettings.byID[BlockID].Texture_Marched.y * BlockSettings.BlockTileSize));
                     }
                     else if (Input.GetAxis("Mouse ScrollWheel") < 0f && buildmode == 0)
                     { // backwards
-                        if (BlockID == BlockData.byID.Count - 1)
+                        if (BlockID == BlockSettings.byID.Count - 1)
                             BlockID = 1;
                         else
                             BlockID += 1;
-                        PlaceBlockMat.SetTextureScale("_UnlitColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-                        PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[BlockID].Texture_Marched.x * BlockData.BlockTileSize, BlockData.byID[BlockID].Texture_Marched.y * BlockData.BlockTileSize));
+                        PlaceBlockMat.SetTextureScale("_UnlitColorMap", new Vector2(BlockSettings.BlockTileSize, BlockSettings.BlockTileSize));
+                        PlaceBlockMat.SetTextureOffset("_UnlitColorMap", new Vector2(BlockSettings.byID[BlockID].Texture_Marched.x * BlockSettings.BlockTileSize, BlockSettings.byID[BlockID].Texture_Marched.y * BlockSettings.BlockTileSize));
                     }
 
                     if (Input.GetAxis("Mouse ScrollWheel") > 0f && buildmode == 2)

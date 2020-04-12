@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6232389594845169419}
   - component: {fileID: 7132480428481635764}
   - component: {fileID: 4506568810109120506}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Chunk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -60,7 +60,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ce6988209b0bebd4282fb8da35db9563, type: 2}
+  - {fileID: 2100000, guid: 2aaa060766644024593b2d0b6006ecba, type: 2}
   - {fileID: 2100000, guid: 7683731f0ade721499c1f34f9cc2cbb4, type: 2}
   - {fileID: 2100000, guid: 1e9d1a4f8da54064aa26849aa1a6ab94, type: 2}
   - {fileID: 2100000, guid: 1e9d1a4f8da54064aa26849aa1a6ab94, type: 2}
@@ -116,12 +116,17 @@ MonoBehaviour:
     x: 0
     y: 0
     z: 0
+  transformPosition:
+    x: 0
+    y: 0
+    z: 0
+  chunkManagerIndex: -1
   generated: 0
   isGenerating: 0
   isQueuedForDeletion: 0
   isRenderQueued: 0
   isEmpty: 1
   isReading: 0
-  RenderImportance: 0
+  localLog: 
   LOD: 1
   rendered: 0

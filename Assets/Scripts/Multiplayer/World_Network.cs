@@ -7,7 +7,7 @@ using BeardedManStudios.Forge.Networking;
 using UnityEngine.SceneManagement;
 using System;
 using Unity.Collections;
-
+using VoxaNovus;
 public class World_Network : WorldNetworkingBehavior
 {
     World world;
@@ -29,12 +29,10 @@ public class World_Network : WorldNetworkingBehavior
 
         if (!NetworkManager.Instance.IsServer) return;
 
-        world.MapLoadInfo = "Loading server settings...";
-        MarchingCubesTables.ConvertToNative();
-        BlockData.InitializeBlocks();
+        //MarchingCubesTables.ConvertToNative();
+        //BlockConfigurationReader.InitializeBlocks();
         
-        StartCoroutine(BlockData.InitializeSounds());
-        world.MapLoadInfo = "Setting up server...";
+        //StartCoroutine(BlockConfigurationReader.InitializeSounds());
 
         // Send handshake packet to let player know that the connection was estabilished.
         networkObject.SendRpc(RPC_HANDSHAKE, Receivers.OthersBuffered, (byte)0);
@@ -43,26 +41,44 @@ public class World_Network : WorldNetworkingBehavior
         // Send texturepack (works, but bugged af, todo)
         /*
         networkObject.SendRpc(RPC_SEND_TEXTURE_PACK, Receivers.OthersBuffered,
-            BlockData.BlockTexture.GetRawTextureData(),
-            BlockData.BlockTileSize,
-            BlockData.TextureSize);
+            BlockSettings.BlockTexture.GetRawTextureData(),
+            BlockSettings.BlockTileSize,
+            BlockSettings.TextureSize);
         */
 
         // Send world info (seed, size, etc)
-        networkObject.SendRpc(RPC_BLOCK_INIT, Receivers.OthersBuffered,
-            BlockData.byID.ObjectToByteArray(),
-            BlockData.BlockNames.ObjectToByteArray());
 
-        if (Mods.LoadedMapgens.Count > 0)
+        networkObject.SendRpc(RPC_BLOCK_INIT, Receivers.OthersBuffered,
+            BlockSettings.byID.ObjectToByteArray(),
+            BlockSettings.BlockNames.ObjectToByteArray());
+
+        switch (BlockSettings.worldGen)
         {
-            Debug.Log("Found custom mapgen");
-            world.worldGen = new WorldGen(); //Activator.CreateInstance(Mods.LoadedMapgens[0]);
+            default:
+            case 0: 
+                world.worldGen = new VoxaNovus.WorldGen.FlatgrassWithChunkBorder();
+                Debug.Log("FlatgrassWithChunkBorder"); 
+                break;
+            case 1: 
+                world.worldGen = new VoxaNovus.WorldGen.Flatgrass(); 
+                Debug.Log("Flatgrass"); 
+                break;
+            case 2: 
+                world.worldGen = new VoxaNovus.WorldGen.FloatingIslands(); 
+                Debug.Log("FloatingIslands"); 
+                break;
         }
-        else
-        {
-            Debug.Log("Using default mapgen");
-            world.worldGen = new WorldGen();
-        }
+
+        //if (Mods.LoadedMapgens.Count > 0)
+        //{
+        //    Debug.Log("Found custom mapgen");
+        //    world.worldGen = new VoxaNovus.WorldGen.Flatgrass(); //Activator.CreateInstance(Mods.LoadedMapgens[0]);
+        //}
+        //else
+        //{
+        //    Debug.Log("Using default mapgen");
+        //    world.worldGen = new VoxaNovus.WorldGen.Flatgrass();
+        //}
 
         StartCoroutine(world.ExecuteWorldgenQueue());
 
@@ -106,53 +122,49 @@ public class World_Network : WorldNetworkingBehavior
     public override void Handshake(RpcArgs args)
     {
         byte received = args.GetNext<byte>();
-
-        world.MapLoadInfo = "Fetching world data...";
     }
 
     public override void SendTexturePack(RpcArgs args)
     {
         byte[] receivedBytes = args.GetNext<byte[]>();
-        BlockData.BlockTexture = new Texture2D(128, 128);
-        BlockData.BlockTexture.LoadRawTextureData(receivedBytes);
-        BlockData.BlockTexture.Apply();
+        BlockSettings.BlockTexture = new Texture2D(128, 128);
+        BlockSettings.BlockTexture.LoadRawTextureData(receivedBytes);
+        BlockSettings.BlockTexture.Apply();
 
-        BlockData.BlockTileSize = args.GetNext<float>();
+        BlockSettings.BlockTileSize = args.GetNext<float>();
 
-        BlockData.TextureSize = args.GetNext<float>();
+        BlockSettings.TextureSize = args.GetNext<float>();
     }
 
     public override void BlockInit(RpcArgs args)
     {
-        BlockData.InitalizeClient();
+        BlockConfigurationReader.InitalizeClient();
 
         byte[] receivedBytes = args.GetNext<byte[]>();
-        BlockData.byID.Clear();
-        BlockData.byID = receivedBytes.ByteArrayToObject<List<BlockTypes>>();
+        BlockSettings.byID.Clear();
+        BlockSettings.byID = receivedBytes.ByteArrayToObject<List<BlockData>>();
         receivedBytes = args.GetNext<byte[]>();
-        BlockData.BlockNames = receivedBytes.ByteArrayToObject<string[]>();
+        BlockSettings.BlockNames = receivedBytes.ByteArrayToObject<string[]>();
     }
 
     public override void CreateWorld(RpcArgs args)
     {
-        world.MapLoadInfo = "Preparing map...";
-
         string[] PropertyNames = world.BlockMaterial.GetTexturePropertyNames();
 
-        world.BlockMaterial.SetFloat("Vector1_430CB87B", BlockData.BlockTileSize);
-        world.BlockMaterial.SetFloat("Vector1_7C9B6D59", BlockData.TextureSize);
-        world.BlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
+        world.BlockMaterial.SetFloat("Vector1_430CB87B", BlockSettings.BlockTileSize);
+        world.BlockMaterial.SetFloat("Vector1_7C9B6D59", BlockSettings.TextureSize);
+        world.BlockMaterial.SetTexture(PropertyNames[0], BlockSettings.BlockTexture);
         world.BlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
 
         PropertyNames = world.MarchedBlockMaterial.GetTexturePropertyNames();
-        world.MarchedBlockMaterial.SetFloat("Vector1_430CB87B", BlockData.BlockTileSize);
-        world.MarchedBlockMaterial.SetFloat("Vector1_7C9B6D59", BlockData.TextureSize);
-        world.MarchedBlockMaterial.SetTexture(PropertyNames[0], BlockData.BlockTexture);
+        world.MarchedBlockMaterial.SetFloat("Vector1_430CB87B", BlockSettings.BlockTileSize);
+        world.MarchedBlockMaterial.SetFloat("Vector1_7C9B6D59", BlockSettings.TextureSize);
+        world.MarchedBlockMaterial.SetTexture(PropertyNames[0], BlockSettings.BlockTexture);
         world.MarchedBlockMaterial.GetTexture(PropertyNames[0]).filterMode = FilterMode.Point;
 
-        world.SelectedMaterial.SetTextureOffset("_UnlitColorMap", new Vector2(BlockData.byID[1].Texture_Up.x * BlockData.BlockTileSize, BlockData.byID[1].Texture_Up.y * BlockData.BlockTileSize));
-        world.SelectedMaterial.SetTextureScale("_UnlitColorMap", new Vector2(BlockData.BlockTileSize, BlockData.BlockTileSize));
-        world.SelectedMaterial.SetTexture("_UnlitColorMap", BlockData.BlockTexture);
+        world.SelectedMaterial.SetTextureOffset("_UnlitColorMap", new Vector2(BlockSettings.byID[1].Texture_Up.x * BlockSettings.BlockTileSize, BlockSettings.byID[1].Texture_Up.y * BlockSettings.BlockTileSize));
+        world.SelectedMaterial.SetTextureScale("_UnlitColorMap", new Vector2(BlockSettings.BlockTileSize, BlockSettings.BlockTileSize));
+        world.SelectedMaterial.SetTexture("_UnlitColorMap", BlockSettings.BlockTexture);
         world.SelectedMaterial.GetTexture("_UnlitColorMap").filterMode = FilterMode.Point;
 
         Vector2 tempv2 = args.GetNext<Vector2>();
@@ -184,7 +196,23 @@ public class World_Network : WorldNetworkingBehavior
 
         Mods.CompileMod(System.Text.Encoding.UTF8.GetString(MapgenCode, 0, MapgenCode.Length), sMapgenName);
         //world.worldGen = Activator.CreateInstance(Mods.GetMapgen(sMapgenName));
-        world.worldGen = new WorldGen();
+
+        switch (BlockSettings.worldGen)
+        {
+            default:
+            case 0: 
+                world.worldGen = new VoxaNovus.WorldGen.FlatgrassWithChunkBorder();
+                Debug.Log("FlatgrassWithChunkBorder"); 
+                break;
+            case 1: 
+                world.worldGen = new VoxaNovus.WorldGen.Flatgrass(); 
+                Debug.Log("Flatgrass"); 
+                break;
+            case 2: 
+                world.worldGen = new VoxaNovus.WorldGen.FloatingIslands(); 
+                Debug.Log("FloatingIslands"); 
+                break;
+        }
         //world.worldGen.PrepareBlockInfo();
         StartCoroutine(world.ExecuteWorldgenQueue());
     }

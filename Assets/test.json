@@ -1,0 +1,78 @@
+[
+  {
+    "Id": 1,
+    "TextureUp": {
+      "X": 1,
+      "Y": 1
+    },
+    "TextureDown": {
+      "X": 1,
+      "Y": 1
+    },
+    "TextureNorth": {
+      "X": 1,
+      "Y": 1
+    },
+    "TextureSouth": {
+      "X": 1,
+      "Y": 1
+    },
+    "TextureEast": {
+      "X": 1,
+      "Y": 1
+    },
+    "TextureWest": {
+      "X": 1,
+      "Y": 1
+    },
+    "TextureMarched": {
+      "X": 1,
+      "Y": 1
+    },
+    "CullingMode": 0,
+    "PhysicsTime": 0,
+    "MarchingCubesLayer": 0,
+    "UsePhysics": false,
+    "Solid": true,
+    "Foliage": false,
+    "Liquid": false
+  },
+  {
+    "Id": 2,
+    "TextureUp": {
+      "X": 2,
+      "Y": 1
+    },
+    "TextureDown": {
+      "X": 2,
+      "Y": 1
+    },
+    "TextureNorth": {
+      "X": 2,
+      "Y": 1
+    },
+    "TextureSouth": {
+      "X": 2,
+      "Y": 1
+    },
+    "TextureEast": {
+      "X": 2,
+      "Y": 1
+    },
+    "TextureWest": {
+      "X": 2,
+      "Y": 1
+    },
+    "TextureMarched": {
+      "X": 2,
+      "Y": 1
+    },
+    "CullingMode": 0,
+    "PhysicsTime": 0,
+    "MarchingCubesLayer": 0,
+    "UsePhysics": false,
+    "Solid": true,
+    "Foliage": false,
+    "Liquid": false
+  }
+]

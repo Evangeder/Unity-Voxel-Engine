@@ -8,14 +8,16 @@ public class MainMenu_AutoPlayMusic : MonoBehaviour
     AudioSource _as;
     [SerializeField] AudioClip MainTheme;
 
-    void Start()
+    void Awake()
     {
         _as = gameObject.GetComponent<AudioSource>();
+        MusicPlayer.MusicAudioSource = _as;
+        MusicPlayer.ChangeMusicVolume();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!_as.isPlaying) _as.PlayOneShot(MainTheme, 0.5f);
+        if (!_as.isPlaying) _as.PlayOneShot(MainTheme, SoundSettings.MusicVolume);
     }
 }

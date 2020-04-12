@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5620357620161876425}
   - component: {fileID: 5620357620161876424}
   - component: {fileID: 5620357620161876423}
-  m_Layer: 2
+  m_Layer: 12
   m_Name: Bomb
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -57,6 +57,7 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -122,3 +123,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34f6fdd1b0ec0754d9c532439e706438, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  world: {fileID: 0}
+  bombExplosion: {fileID: 1771028724901839697, guid: c21534aab961be041bf67604b300e048,
+    type: 3}

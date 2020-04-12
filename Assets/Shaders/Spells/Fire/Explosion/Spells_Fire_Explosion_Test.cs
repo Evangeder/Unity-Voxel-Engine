@@ -5,8 +5,9 @@ using UnityEngine;
 public class Spells_Fire_Explosion_Test : MonoBehaviour
 {
     // Start is called before the first frame update
+    [SerializeField] GameObject parentObject;
     [SerializeField] [Range(0f, 10f)] float scale = 1f;
-
+    [SerializeField] bool destroyFromAnim = false;
     void Start()
     {
         
@@ -18,6 +19,10 @@ public class Spells_Fire_Explosion_Test : MonoBehaviour
         Vector3 newscale = new Vector3(scale, scale, scale);
         transform.localScale = newscale;
 
-
+        if (destroyFromAnim) 
+        {
+            Destroy(parentObject);
+            Destroy(gameObject); 
+        }
     }
 }

@@ -6,6 +6,7 @@ using BeardedManStudios.Forge.Networking.Unity;
 using BeardedManStudios.Forge.Networking;
 using UnityEngine.SceneManagement;
 using Unity.Mathematics;
+using VoxaNovus;
 
 public class Player_Network : Player_NetworkingBehavior
 {

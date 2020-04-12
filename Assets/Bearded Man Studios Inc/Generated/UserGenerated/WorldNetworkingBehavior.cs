@@ -135,7 +135,7 @@ namespace BeardedManStudios.Forge.Networking.Generated
 		public abstract void SendMapgen(RpcArgs args);
 		/// <summary>
 		/// Arguments:
-		/// byte[] BlockData
+		/// byte[] BlockSettings
 		/// byte[] BlockNames
 		/// </summary>
 		public abstract void BlockInit(RpcArgs args);

@@ -7,6 +7,7 @@ public class OverlayFadeout : MonoBehaviour
     // Start is called before the first frame update
     UnityEngine.UI.Image img;
     public bool FadeOut = true, FadeIn = false;
+    public bool FadeInDone = false;
 
     void Start()
     {
@@ -33,7 +34,8 @@ public class OverlayFadeout : MonoBehaviour
             if (col.a >= 1f)
             {
                 FadeIn = false;
-                gameObject.SetActive(false);
+                FadeInDone = true;
+                //gameObject.SetActive(false);
             }
             col.a += 1f * Time.deltaTime;
             img.color = col;

@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 using CielaSpike;
 using System.Collections.Generic;
 using System.Threading;
+using VoxaNovus;
 public static class Mods
 {
     public static List<Type> LoadedMapgens = new List<Type>();
@@ -362,7 +363,7 @@ public class ModManager : MonoBehaviour
         UnityEngine.UI.Text LText = GameObject.Find("LoadingText").GetComponent<UnityEngine.UI.Text>();
         LText.text = "Loading...";
 
-        while (!world_.MainMenu_WorldReady) { yield return new WaitForEndOfFrame(); }
+        //while (!world_.MainMenu_WorldReady) { yield return new WaitForEndOfFrame(); }
 
         while (BlackOverlay.color.a < 1f)
         {
