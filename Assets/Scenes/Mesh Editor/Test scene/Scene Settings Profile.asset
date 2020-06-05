@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 0
   m_AdvancedMode: 0
+  quality:
+    m_OverrideState: 0
+    m_Value: 1
   focusMode:
     m_OverrideState: 1
     m_Value: 2
@@ -37,30 +40,30 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1000
     min: 0
-  nearSampleCount:
+  m_NearSampleCount:
     m_OverrideState: 0
     m_Value: 5
     min: 3
     max: 8
-  nearMaxBlur:
+  m_NearMaxBlur:
     m_OverrideState: 0
     m_Value: 4
     min: 0
     max: 8
-  farSampleCount:
+  m_FarSampleCount:
     m_OverrideState: 0
     m_Value: 7
     min: 3
     max: 16
-  farMaxBlur:
+  m_FarMaxBlur:
     m_OverrideState: 0
     m_Value: 8
     min: 0
     max: 16
-  highQualityFiltering:
+  m_HighQualityFiltering:
     m_OverrideState: 0
     m_Value: 1
-  resolution:
+  m_Resolution:
     m_OverrideState: 0
     m_Value: 2
 --- !u!114 &-5795673455405964009
@@ -75,7 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c1be1b6c95cd2e41b27903b9270817f, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   mode:
     m_OverrideState: 1
@@ -173,7 +176,7 @@ MonoBehaviour:
   baseHeight:
     m_OverrideState: 0
     m_Value: 0
-  meanHeight:
+  maximumHeight:
     m_OverrideState: 0
     m_Value: 10
   anisotropy:
@@ -218,7 +221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da5ab44aadfb1804db5fd470983ac1b8, type: 3}
   m_Name: LiftGammaGain
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   lift:
     m_OverrideState: 0
@@ -285,6 +288,11 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 500
     min: 0
+  directionalTransmissionMultiplier:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
   cascadeShadowSplitCount:
     m_OverrideState: 1
     m_Value: 4
@@ -344,6 +352,9 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1
     min: 0
+  upperHemisphereLuxColor:
+    m_OverrideState: 0
+    m_Value: {x: 0, y: 0, z: 0}
   desiredLuxValue:
     m_OverrideState: 1
     m_Value: 20000
@@ -401,6 +412,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 0
   m_AdvancedMode: 0
+  quality:
+    m_OverrideState: 0
+    m_Value: 1
+  threshold:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
   intensity:
     m_OverrideState: 1
     m_Value: 0.579
@@ -424,16 +442,13 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
     min: 0
-  highQualityFiltering:
+  anamorphic:
     m_OverrideState: 1
     m_Value: 1
-  resolution:
+  m_Resolution:
     m_OverrideState: 1
     m_Value: 2
-  prefilter:
-    m_OverrideState: 1
-    m_Value: 0
-  anamorphic:
+  m_HighQualityFiltering:
     m_OverrideState: 1
     m_Value: 1
 --- !u!114 &11400000
@@ -521,8 +536,8 @@ MonoBehaviour:
   baseHeight:
     m_OverrideState: 1
     m_Value: 0
-  meanHeight:
-    m_OverrideState: 1
+  maximumHeight:
+    m_OverrideState: 0
     m_Value: 10
   anisotropy:
     m_OverrideState: 1
@@ -646,10 +661,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 0
   m_AdvancedMode: 0
-  sampleCount:
-    m_OverrideState: 1
-    m_Value: 8
-    min: 2
+  quality:
+    m_OverrideState: 0
+    m_Value: 1
   intensity:
     m_OverrideState: 1
     m_Value: 1
@@ -674,6 +688,10 @@ MonoBehaviour:
     m_Value: 1
     min: 0
     max: 20
+  m_SampleCount:
+    m_OverrideState: 1
+    m_Value: 8
+    min: 2
 --- !u!114 &4738874570691663555
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -708,7 +726,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a81bcacc415a1f743bfdf703afc52027, type: 3}
   m_Name: GradientSky
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   rotation:
     m_OverrideState: 1
@@ -729,6 +747,9 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1
     min: 0
+  upperHemisphereLuxColor:
+    m_OverrideState: 0
+    m_Value: {x: 0, y: 0, z: 0}
   desiredLuxValue:
     m_OverrideState: 1
     m_Value: 20000
@@ -775,7 +796,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d7593b3a9277ac4696b20006c21dde2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   skyType:
     m_OverrideState: 1
@@ -839,55 +860,84 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  quality:
+    m_OverrideState: 0
+    m_Value: 1
+  rayTracing:
+    m_OverrideState: 0
+    m_Value: 0
   intensity:
     m_OverrideState: 1
     m_Value: 1.27
     min: 0
     max: 4
-  stepCount:
-    m_OverrideState: 0
-    m_Value: 6
-    min: 2
-    max: 32
-  radius:
-    m_OverrideState: 0
-    m_Value: 2
-    min: 0.25
-    max: 5
-  fullResolution:
-    m_OverrideState: 0
-    m_Value: 0
-  maximumRadiusInPixels:
-    m_OverrideState: 0
-    m_Value: 40
-    min: 16
-    max: 256
   directLightingStrength:
     m_OverrideState: 1
     m_Value: 0.438
     min: 0
     max: 1
-  enableRaytracing:
+  radius:
     m_OverrideState: 0
-    m_Value: 0
+    m_Value: 2
+    min: 0.25
+    max: 5
+  temporalAccumulation:
+    m_OverrideState: 0
+    m_Value: 1
+  ghostingReduction:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0
+    max: 1
+  blurSharpness:
+    m_OverrideState: 0
+    m_Value: 0.1
+    min: 0
+    max: 1
+  layerMask:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 4294967295
   rayLength:
     m_OverrideState: 0
     m_Value: 0.5
     min: 0
     max: 50
-  enableFilter:
-    m_OverrideState: 0
-    m_Value: 0
-  numSamples:
+  sampleCount:
     m_OverrideState: 0
     m_Value: 4
     min: 1
     max: 64
-  filterRadius:
+  denoise:
     m_OverrideState: 0
-    m_Value: 16
-    min: 1
+    m_Value: 0
+  denoiserRadius:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0.001
+    max: 1
+  m_StepCount:
+    m_OverrideState: 0
+    m_Value: 6
+    min: 2
     max: 32
+  m_FullResolution:
+    m_OverrideState: 0
+    m_Value: 0
+  m_MaximumRadiusInPixels:
+    m_OverrideState: 0
+    m_Value: 40
+    min: 16
+    max: 256
+  m_BilateralUpsample:
+    m_OverrideState: 0
+    m_Value: 1
+  m_DirectionCount:
+    m_OverrideState: 0
+    m_Value: 2
+    min: 1
+    max: 6
 --- !u!114 &8572241312496663911
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -902,52 +952,81 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  quality:
+    m_OverrideState: 0
+    m_Value: 1
+  rayTracing:
+    m_OverrideState: 0
+    m_Value: 0
   intensity:
     m_OverrideState: 0
     m_Value: 0
     min: 0
     max: 4
-  stepCount:
-    m_OverrideState: 0
-    m_Value: 6
-    min: 2
-    max: 32
-  radius:
-    m_OverrideState: 0
-    m_Value: 2
-    min: 0.25
-    max: 5
-  fullResolution:
-    m_OverrideState: 0
-    m_Value: 0
-  maximumRadiusInPixels:
-    m_OverrideState: 0
-    m_Value: 40
-    min: 16
-    max: 256
   directLightingStrength:
     m_OverrideState: 0
     m_Value: 0
     min: 0
     max: 1
-  enableRaytracing:
+  radius:
     m_OverrideState: 0
-    m_Value: 0
+    m_Value: 2
+    min: 0.25
+    max: 5
+  temporalAccumulation:
+    m_OverrideState: 0
+    m_Value: 1
+  ghostingReduction:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0
+    max: 1
+  blurSharpness:
+    m_OverrideState: 0
+    m_Value: 0.1
+    min: 0
+    max: 1
+  layerMask:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 4294967295
   rayLength:
     m_OverrideState: 0
     m_Value: 0.5
     min: 0
     max: 50
-  enableFilter:
-    m_OverrideState: 0
-    m_Value: 0
-  numSamples:
+  sampleCount:
     m_OverrideState: 0
     m_Value: 4
     min: 1
     max: 64
-  filterRadius:
+  denoise:
     m_OverrideState: 0
-    m_Value: 16
-    min: 1
+    m_Value: 0
+  denoiserRadius:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0.001
+    max: 1
+  m_StepCount:
+    m_OverrideState: 0
+    m_Value: 6
+    min: 2
     max: 32
+  m_FullResolution:
+    m_OverrideState: 0
+    m_Value: 0
+  m_MaximumRadiusInPixels:
+    m_OverrideState: 0
+    m_Value: 40
+    min: 16
+    max: 256
+  m_BilateralUpsample:
+    m_OverrideState: 0
+    m_Value: 1
+  m_DirectionCount:
+    m_OverrideState: 0
+    m_Value: 2
+    min: 1
+    max: 6

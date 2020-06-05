@@ -55,10 +55,12 @@ namespace VoxaNovus
         public static IEnumerator PhysicsQueueIterator()
         {
             Debug.Log("Physics Queue started.");
-            int iterator = 0;
+            int ticksToWait = 0;
             while (true)
             {
-                iterator++;
+                while (priorityQueue.Count < 1) yield return null;
+
+                ticksToWait++;
                 swtime.Restart();
                 if (priorityQueue.Count > 0 && priorityQueue.GetPriority(priorityQueue.First) < Time.realtimeSinceStartup)
                 {
@@ -67,8 +69,10 @@ namespace VoxaNovus
                     if (BlockSettings.world.CheckChunk(node.x, node.y, node.z))
                     {
                         Chunk ch = BlockSettings.world.GetChunk(node.x, node.y, node.z);
+                        while (ch.IsRendering || ch.isWriting || ch.ioRenderValue > 0) yield return null;
+                        if (ch.isEmpty || ch.isRenderQueued) continue;
                         if (BlockSettings.world.GetBlock(node.x, node.y, node.z).ID == node.metadata.ID && BlockSettings.PhysicsBound[node.metadata.ID])
-                            BlockSettings.PhysicsFunctions[node.metadata.ID].Tick(node.metadata, node.x, node.y, node.z);
+                            BlockSettings.world.StartCoroutine(BlockSettings.PhysicsFunctions[node.metadata.ID].Tick(node.metadata, node.x, node.y, node.z));
 
                         if (!ChunksToUpdate.Contains(ch))
                             ChunksToUpdate.Add(ch);
@@ -78,12 +82,15 @@ namespace VoxaNovus
                 swtime.Stop();
                 if (swtime.Elapsed.Ticks > 1000000)
                     Debug.Log($"Physics tick took: {swtime.Elapsed.ToString()}");
-                if (iterator > 500)
+                if (ticksToWait > 500)
                 {
-                    iterator = 0;
-                    foreach (Chunk ch in ChunksToUpdate)
-                        ch.UpdateChunk();
-                    ChunksToUpdate.Clear();
+                    ticksToWait = 0;
+                    if (ChunksToUpdate.Count > 0)
+                    {
+                        foreach (Chunk ch in ChunksToUpdate)
+                            ch.UpdateChunk();
+                        ChunksToUpdate.Clear();
+                    }
                     yield return null;
                 }
             }

@@ -79,7 +79,7 @@ namespace VoxaNovus
             transformPosition = int3.zero;
 
             for (int i = 0; i < 3; i++)
-                yield return new WaitForEndOfFrame();
+                yield return Macros.Coroutine.WaitFor_EndOfFrame;
 
             if (BlocksN.IsCreated) BlocksN.Dispose();
             BlocksN = new NativeArray<BlockMetadata>((int)math.pow(BlockSettings.ChunkSize, 3), Allocator.Persistent);

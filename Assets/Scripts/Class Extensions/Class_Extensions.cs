@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
@@ -18,6 +19,12 @@ public static class ClassExtensions
     public static T GetRandomElement<T>(this T[] array)
     {
         return array[UnityEngine.Random.Range(0, array.Length)];
+    }
+
+    public static bool Remove<TKey, TValue>(
+      this ConcurrentDictionary<TKey, TValue> self, TKey key)
+    {
+        return ((IDictionary<TKey, TValue>)self).Remove(key);
     }
 }
 

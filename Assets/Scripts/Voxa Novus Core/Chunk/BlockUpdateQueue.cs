@@ -91,7 +91,7 @@ namespace VoxaNovus {
 
             while (!StopExecuting)
             {
-                while (chunksWithBlockQueue.Count <= 0) yield return new WaitForEndOfFrame();
+                while (chunksWithBlockQueue.Count <= 0) yield return Macros.Coroutine.WaitFor_EndOfFrame;
 
                 foreach (var chunk in chunksWithBlockQueue.Values)
                 {
@@ -115,8 +115,8 @@ namespace VoxaNovus {
                         chunk = chunk.BlocksN,
                     }.Schedule();
                     
-                    yield return new WaitForEndOfFrame();
-                    yield return new WaitForEndOfFrame();
+                    yield return Macros.Coroutine.WaitFor_EndOfFrame;
+                    yield return Macros.Coroutine.WaitFor_EndOfFrame;
                     BlockUpdate_JobHandle.Complete();
 
                     chunksToUpdate.Add(chunk);
@@ -144,7 +144,7 @@ namespace VoxaNovus {
                     chunksToRemove.Clear();
                 }
 
-                yield return new WaitForEndOfFrame();
+                yield return Macros.Coroutine.WaitFor_EndOfFrame;
             }
         }
     }

@@ -1498,7 +1498,7 @@ public class LoadJsonWorldSettings : MonoBehaviour
                 else
                 {
                     blockPhysics = (BlockPhysics)Activator.CreateInstance(type);
-                    blockPhysics.Init(BlockSettings.world);
+                    BlockSettings.PhysicsFunctions[rawBlock.ID] = blockPhysics;
                     BlockSettings.PhysicsBound[rawBlock.ID] = true;
                     Debug.Log($"Bound {blockPhysics} to blockid {rawBlock.ID} ({BlockSettings.FullNames[rawBlock.ID]})");
                 }

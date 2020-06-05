@@ -365,7 +365,7 @@
       "Physics": {
         "UsePhysics": true,
         "PhysicsTime": 0.5,
-        "PhysicsFunction": "SandfallTest"
+        "PhysicsFunction": "VoxaNovus.SandfallTest"
       },
       "MarchingCubesLayer": 0,
       "Solid": true,

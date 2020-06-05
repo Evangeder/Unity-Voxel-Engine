@@ -211,7 +211,7 @@ public class ModManager : MonoBehaviour
     IEnumerator LoadModsCoroutine()
     {
         yield return Ninja.JumpToUnity;
-        yield return new WaitForSeconds(1f);
+        yield return Macros.Coroutine.WaitFor_1_Second;
         consoleLog.Add("Initalizing modloader.");
         StartCoroutine(UpdateLog());
     RetryLoading:
@@ -370,7 +370,7 @@ public class ModManager : MonoBehaviour
             Color col = BlackOverlay.color;
             col.a += 1f * Time.deltaTime;
             BlackOverlay.color = col;
-            yield return new WaitForEndOfFrame();
+            yield return Macros.Coroutine.WaitFor_EndOfFrame;
         }
 
         MainMenuCanvas.SetActive(true);

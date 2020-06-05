@@ -95,7 +95,7 @@ namespace VoxaNovus
                         }
                     }
                 }
-                yield return new WaitForEndOfFrame();
+                yield return Macros.Coroutine.WaitFor_EndOfFrame;
             }
             using (var file = File.OpenWrite(path))
             {

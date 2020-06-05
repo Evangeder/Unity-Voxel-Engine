@@ -73,7 +73,8 @@ public class bomb : MonoBehaviour
             if (!world.CheckChunk(out Chunk chunk, coords.x + pos.x, coords.y + pos.y, coords.z + pos.z)) continue;
 
             int3 localPosition = new int3(coords.x + pos.x - chunk.pos.x, coords.y + pos.y - chunk.pos.y, coords.z + pos.z - chunk.pos.z);
-            chunk.BlockchangeQueue.Enqueue(new QueuedBlock(localPosition, new BlockMetadata()));
+            chunk.SetBlock(localPosition.x, localPosition.y, localPosition.z, BlockMetadata.EmptyPhysicsTrigger(), false, BlockUpdateMode.None);
+            //chunk.BlockchangeQueue.Enqueue(new QueuedBlock(localPosition, new BlockMetadata()));
             //chunk.SetBlock(
             //    coords.x + pos.x - chunk.pos.x,
             //    coords.y + pos.y - chunk.pos.y,
@@ -87,12 +88,13 @@ public class bomb : MonoBehaviour
                 chunksToUpdate.Add(chunk);
         }
 
-        yield return new WaitForEndOfFrame();
+        yield return Macros.Coroutine.WaitFor_EndOfFrame;
         yield return Ninja.JumpToUnity;
 
         foreach (var ch in chunksToUpdate)
-            BlockUpdateQueue.Push(ch);
+            //BlockUpdateQueue.Push(ch);
             //ch.UpdateChunk(ChunkUpdateMode.ForceNeighbours);
+            ch.UpdateChunk(ChunkUpdateMode.ForceNeighbours);
 
         sw.Stop();
         Destroy(gameObject);

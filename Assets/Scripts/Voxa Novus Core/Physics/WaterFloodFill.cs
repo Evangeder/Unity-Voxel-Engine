@@ -1,4 +1,6 @@
-﻿namespace VoxaNovus
+﻿using System.Collections;
+
+namespace VoxaNovus
 {
     public class WaterFloodfill : BlockPhysics
     {
@@ -9,8 +11,11 @@
             this.world = world;
         }
 
-        public void Tick(BlockMetadata block, int x, int y, int z)
+        public IEnumerator Tick(BlockMetadata block, int x, int y, int z)
         {
+            Chunk ch = world.GetChunk(x, y, z);
+            while (ch.isWriting || ch.IsRendering || ch.ioRenderValue > 0) yield return null;
+
             for (int ix = -1; ix < 2; ix++)
                 for (int iy = -1; iy < 1; iy++)
                     for (int iz = -1; iz < 2; iz++)

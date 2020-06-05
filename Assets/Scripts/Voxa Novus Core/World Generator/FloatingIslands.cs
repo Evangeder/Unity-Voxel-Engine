@@ -10,7 +10,6 @@ namespace VoxaNovus.WorldGen
     {
         public override void PrepareJob(Chunk chunk)
         {
-            chunk.world.AppendLog(chunk.pos.ToString());
             chunk.WorldGen_JobHandle = new sFloatingIslands()
             {
 

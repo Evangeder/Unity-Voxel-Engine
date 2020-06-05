@@ -51,6 +51,7 @@ public class Modify : MonoBehaviour
     bool dontfocus = false;
 
     int3 SchemaSelection1, SchemaSelection2, SchemaSelectionOrigin;
+    bool isSoundInitialized = false;
 
     void Awake()
     {
@@ -97,6 +98,7 @@ public class Modify : MonoBehaviour
         //Cursor.lockState = CursorLockMode.Locked;
         //Cursor.visible = false;
         StartCoroutine(spawnBombloop());
+        isSoundInitialized = BlockSettings.BlockSounds != null && BlockSettings.BlockSounds.Length > 0;
     }
 
     IEnumerator spawnBombloop()
@@ -104,7 +106,7 @@ public class Modify : MonoBehaviour
         while (true)
         {
             for (int i = 0; i < 5; i++)
-                yield return new WaitForEndOfFrame();
+                yield return Macros.Coroutine.WaitFor_EndOfFrame;
 
             if (Input.GetKey(KeyCode.F))
             {
@@ -566,7 +568,7 @@ public class Modify : MonoBehaviour
                                 else
                                 {
                                     BlockMetadata b = BlockRaycast.GetBlock(hit, true);
-                                    if (BlockSettings.BlockSounds[b.ID].Count > 0)
+                                    if (isSoundInitialized && BlockSettings.BlockSounds[b.ID] != null && BlockSettings.BlockSounds[b.ID].Count > 0)
                                         _audioSource.PlayOneShot(BlockSettings.BlockSounds[b.ID][Random.Range(0, BlockSettings.BlockSounds[b.ID].Count - 1)]);
                                     BlockRaycast.SetBlock(hit, new BlockMetadata(0, BlockSwitches.None, 0), false);
                                 }

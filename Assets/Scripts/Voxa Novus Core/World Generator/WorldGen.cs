@@ -3,6 +3,7 @@ using Unity.Burst;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
+using Unity.Mathematics;
 
 namespace VoxaNovus.WorldGen
 {
@@ -16,7 +17,7 @@ namespace VoxaNovus.WorldGen
         /// Queue chunk generation at given chunk
         /// </summary>
         /// <param name="chunk">Chunk that will be queued for world generation</param>
-        public void QueueChunk(Chunk chunk, bool MainThread = true)
+        public void QueueChunk(Chunk chunk)
         {
             ChunkQueue.Enqueue(chunk);
         }
@@ -47,8 +48,11 @@ namespace VoxaNovus.WorldGen
 
             if (chunk.WorldGen_JobHandle.IsCompleted 
                 && chunk != null 
-                && !chunk.isQueuedForDeletion 
-                && !chunk.isEmpty 
+                && chunk.BlocksN.Length == (int)math.pow(BlockSettings.ChunkSize, 3)
+                && !chunk.isQueuedForDeletion
+                && !chunk.isEmpty
+                && !chunk.isWriting
+                && chunk.ioRenderValue == 0
                 && chunk.world.CheckChunk(chunk.pos.x, chunk.pos.y, chunk.pos.z) 
                 && chunk.BlocksN.IsCreated
                 && !chunk.generated)
@@ -58,7 +62,7 @@ namespace VoxaNovus.WorldGen
                 PrepareJob(chunk);
 
                 for (int i = 0; i < 2; i++)
-                    yield return new WaitForEndOfFrame();
+                    yield return Macros.Coroutine.WaitFor_EndOfFrame;
 
                 chunk.WorldGen_JobHandle.Complete();
                 chunk.generated = true;

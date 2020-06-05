@@ -26,7 +26,6 @@ namespace VoxaNovus
 
             JobHandle Render_JobHandle;
             World world = chunk.world;
-            List<Chunk> readedChunks = new List<Chunk>();
 
             chunk.IsRendering = true;
             chunk.isRenderQueued = false;
@@ -51,7 +50,6 @@ namespace VoxaNovus
             NativeArray<BlockMetadata>[] neighbourChunks = new NativeArray<BlockMetadata>[26];
             bool[] neighbourChunksAlloc = new bool[26];
 
-
             chunk.ioRenderValue += 1;
             // Grab data from surrounding chunks
             byte iterator = 0;
@@ -69,7 +67,6 @@ namespace VoxaNovus
                         {
                             Chunk neighbour = world.GetChunk(chunk.pos.x + x * BlockSettings.ChunkSize, chunk.pos.y + y * BlockSettings.ChunkSize, chunk.pos.z + z * BlockSettings.ChunkSize);
                             neighbour.ioRenderValue += 1;
-                            readedChunks.Add(neighbour);
                         }
                         iterator++;
                     }
@@ -96,13 +93,6 @@ namespace VoxaNovus
 
                 if (chunk.ioRenderValue > 0) 
                     chunk.ioRenderValue -= 1;
-
-                //foreach (var neighbour in readedChunks)
-                //{
-                //    if (neighbour.ioRenderValue > 0)
-                //        neighbour.ioRenderValue -= 1;
-                //}
-                readedChunks.Clear();
 
                 byte disposalIterator = 0;
                 for (int x = -1; x <= 1; x++)

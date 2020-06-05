@@ -32,9 +32,31 @@ public class MeshEditorUI : MonoBehaviour
         }
     }
 
+    public void ToggleCameraPerspective(Toggle toggle)
+    {
+        if (toggle.isOn)
+        {
+            MainCamera.orthographic = false;
+            MiniCamera.orthographic = false;
+        }
+        else
+        {
+            MainCamera.orthographic = true;
+            MiniCamera.orthographic = true;
+        }
+    }
+
     public void UpdateLightOnMesh(Dropdown dd)
     {
         if (dd.value == 0)
+            EntityRenderer.material = Entity_Lit;
+        else
+            EntityRenderer.material = Entity_Unlit;
+    }
+
+    public void ToggleLightOnMesh(Toggle toggle)
+    {
+        if (toggle.isOn)
             EntityRenderer.material = Entity_Lit;
         else
             EntityRenderer.material = Entity_Unlit;
@@ -56,32 +78,19 @@ public class MeshEditorUI : MonoBehaviour
         }
     }
 
-    public void PreviewMesh(Dropdown dd)
+    public void ToggleShaders(Toggle toggle)
     {
-        if (dd.value == 0)
+        if (toggle.isOn)
         {
-            MeshModel.SetActive(true);
-            UI_ColorPalette.SetActive(true);
-            UI_Tools.SetActive(true);
-            Leaves.SetActive(false);
-            Cobble.SetActive(false);
-        }
-        else if (dd.value == 1)
-        {
-            MeshModel.SetActive(false);
-            UI_ColorPalette.SetActive(false);
-            UI_Tools.SetActive(false);
-            Leaves.SetActive(true);
-            Cobble.SetActive(false);
+            Light_EffectsOFF.SetActive(false);
+            Light_EffectsON.SetActive(true);
+            HDRP_SceneSettings.SetActive(true);
         }
         else
         {
-            MeshModel.SetActive(false);
-            UI_ColorPalette.SetActive(false);
-            UI_Tools.SetActive(false);
-            Leaves.SetActive(false);
-            Cobble.SetActive(true);
-
+            Light_EffectsOFF.SetActive(true);
+            Light_EffectsON.SetActive(false);
+            HDRP_SceneSettings.SetActive(false);
         }
     }
 }

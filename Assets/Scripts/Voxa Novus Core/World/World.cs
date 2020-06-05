@@ -1,6 +1,7 @@
 ﻿using BeardedManStudios.Forge.Networking.Unity;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Unity.Mathematics;
@@ -10,7 +11,7 @@ namespace VoxaNovus
 {
     public class World : MonoBehaviour
     {
-        public Dictionary<int3, Chunk> chunks = new Dictionary<int3, Chunk>();
+        public ConcurrentDictionary<int3, Chunk> chunks = new ConcurrentDictionary<int3, Chunk>();
         public Queue<Chunk> ChunkUpdateQueue = new Queue<Chunk>();
 
         public GameObject Prefab_Chunk;
@@ -50,30 +51,12 @@ namespace VoxaNovus
 
         #region "Create blockdata to work with and proceed to map generation"
 
-        [SerializeField] UnityEngine.UI.Text debugLog;
-        public void AppendLog(string text)
-        {
-            debugLog.text = text;
-            //if (debugLog.text.Length > 0)
-            //{
-            //    string[] split = debugLog.text.Split('\n');
-            //    if (split.Length >= 10)
-            //    {
-            //        debugLog.text = "";
-            //        for (int i = split.Length - 9; i < split.Length; i++)
-            //            debugLog.text += $"{split[i]}\n";
-            //        debugLog.text += $"{text}\n";
-            //    }
-            //    else
-            //    {
-            //        debugLog.text += $"{text}\n";
-            //    }
-            //}
-            //debugLog.text += $"{text}\n";
-        }
-
         void Awake()
         {
+            foreach (var physicsFunction in BlockSettings.PhysicsFunctions)
+                if (physicsFunction != null)
+                    physicsFunction.Init(this);
+
             CalculatedExplosion.Recalculate();
             BlockSettings.world = this;
             Schematics.world = this;
@@ -100,7 +83,7 @@ namespace VoxaNovus
             NetworkManager.Instance.InstantiatePlayer_Networking();
             ChunkManager.Init(Prefab_Chunk, this, 100000, true);
 
-            yield return new WaitForSeconds(5);
+            yield return Macros.Coroutine.WaitFor_5_Seconds;
 
             //while (!BlockSettings.SoundsLoaded)
             //    yield return new WaitForEndOfFrame();
@@ -162,7 +145,7 @@ namespace VoxaNovus
                     if (ch != null && CheckChunk(ch.pos.x, ch.pos.y, ch.pos.z))
                         worldGen.QueueChunk(ChunkUpdateQueue.Dequeue());
                 }
-                yield return new WaitForFixedUpdate();
+                yield return Macros.Coroutine.WaitFor_FixedUpdate;
             }
         }
 
@@ -196,7 +179,7 @@ namespace VoxaNovus
             newChunk.pos = worldPos;
 
             //Add it to the chunks dictionary with the position as the key
-            chunks.Add(worldPos, newChunk);
+            chunks.TryAdd(worldPos, newChunk);
 
             if (generate) worldGen.QueueChunk(newChunk);
 
@@ -205,9 +188,9 @@ namespace VoxaNovus
 
         public void DestroyChunk(int x, int y, int z)
         {
-            Chunk chunk = GetChunk(x, y, z);
-            //Serialization.SaveChunk(chunk);
-            chunks.Remove(chunk.pos);
+            if (!chunks.TryRemove(new int3(x, y, z), out Chunk chunk))
+                return;
+
             if (!chunk.isQueuedForDeletion && !chunk.isEmpty)
                 chunk.QueueDispose();
         }

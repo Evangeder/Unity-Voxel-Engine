@@ -1,8 +1,10 @@
-﻿namespace VoxaNovus
+﻿using System.Collections;
+
+namespace VoxaNovus
 {
     public interface BlockPhysics
     {
         void Init(World world);
-        void Tick(BlockMetadata block, int x, int y, int z);
+        IEnumerator Tick(BlockMetadata block, int x, int y, int z);
     }
 }

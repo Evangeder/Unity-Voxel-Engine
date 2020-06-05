@@ -16,7 +16,7 @@ namespace VoxaNovus
         /// <summary>
         /// Valid values are only 1.0f and 0.5f
         /// </summary>
-        public static float ChunkScale = 0.5f;
+        public static float ChunkScale = 1f;
 
         public const float LargestValidMarchingValue = 0.996f;
 

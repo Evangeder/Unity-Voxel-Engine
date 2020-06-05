@@ -13,7 +13,7 @@ public class VoxelEntity : MonoBehaviour
     MeshCollider meshCollider;
     MeshFilter meshFilter;
 
-    float MouseSensitivity = 3f;
+    float MouseSensitivity = 6f;
 
     public GameObject Head;
     public GameObject Torso;
@@ -26,6 +26,7 @@ public class VoxelEntity : MonoBehaviour
 
     public GameObject RotationSphere;
     public GameObject RotationSphereMini;
+    public GameObject MouseSelection;
     public Camera MainCamera;
     public Camera CameraMini;
     public bool LookAtMouse = false;
@@ -33,13 +34,12 @@ public class VoxelEntity : MonoBehaviour
     public RectTransform Canvas;
     public TMPro.TMP_Text CoordinatesText;
 
-    int ModelSize = 16;
     bool RetryRendering = false;
 
+    static int ModelDimensions = 16;
+    [HideInInspector] public EntityBlockMetaData[] Blocks = new EntityBlockMetaData[(int)math.pow(ModelDimensions, 3)];
 
-    [HideInInspector] public EntityBlockMetaData[] Blocks = new EntityBlockMetaData[(int)math.pow(16, 3)];
-
-    public sbyte RotateToSide = -1;
+    public sbyte RotateToSide = 9;
 
     public struct EntityBlockMetaData
     {
@@ -67,15 +67,24 @@ public class VoxelEntity : MonoBehaviour
 
     void Start()
     {
-        for (int x = 0; x < 16; x++)
-            for (int y = 0; y < 16; y++)
-                for (int z = 0; z < 16; z++)
-                    if (UnityEngine.Random.Range(0f, 100f) > 70f)
-                    {
-                        Blocks[x + y * BlockSettings.ChunkSize + z * BlockSettings.ChunkSize * BlockSettings.ChunkSize].Visible = true;
-                        Blocks[x + y * BlockSettings.ChunkSize + z * BlockSettings.ChunkSize * BlockSettings.ChunkSize].color = new Color(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
-                        //Blocks[x + y * BlockSettings.ChunkSize + z * BlockSettings.ChunkSize * BlockSettings.ChunkSize].color = Color.red;
-                    }
+        Vector3 NewScale = new Vector3(60f * (ModelDimensions / 12), 60f * (ModelDimensions / 12), 60f * (ModelDimensions / 12));
+        RotationSphere.transform.localScale = NewScale;
+        MainCamera.orthographicSize = RotationSphere.transform.localScale.x / 5f;
+
+        for (int x = 0; x < ModelDimensions; x++)
+            for (int y = 0; y < ModelDimensions; y++)
+                for (int z = 0; z < ModelDimensions; z++)
+                //if (UnityEngine.Random.Range(0f, 100f) > 70f)
+                //{
+                //    Blocks[x + y * ModelDimensions + z * ModelDimensions * ModelDimensions].Visible = true;
+                //    Blocks[x + y * ModelDimensions + z * ModelDimensions * ModelDimensions].color = new Color(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
+                //    //Blocks[x + y * ModelDimensions + z * ModelDimensions * ModelDimensions].color = Color.red;
+                //}
+                {
+                    Blocks[x + y * ModelDimensions + z * ModelDimensions * ModelDimensions].Visible = true;
+                    Blocks[x + y * ModelDimensions + z * ModelDimensions * ModelDimensions].color = new Color(0.5607f, 0.7411f, 1f);
+                    //Blocks[x + y * ModelDimensions + z * ModelDimensions * ModelDimensions].color = new Color(0.45f, 0.77f, 1f);
+                }
         Job_UpdateChunk();
     }
 
@@ -89,28 +98,77 @@ public class VoxelEntity : MonoBehaviour
         Ray ray = CameraMini.ScreenPointToRay(normal);
         RaycastHit screenHit;
 
+        bool skipMeshEdit = false;
+
         if (Physics.Raycast(ray, out screenHit))
         {
-            Vector3 newScale = new Vector3(0.15f, 0.15f, 1f);
-            screenHit.collider.gameObject.transform.localScale = newScale;
-            if (Input.GetMouseButtonDown(0))
-                RotateToSide = sbyte.Parse(screenHit.collider.gameObject.name);
+            ResizeUnselected resizeUnselected = screenHit.collider.gameObject.GetComponent<ResizeUnselected>();
+            if (resizeUnselected != null)
+            {
+                if (!resizeUnselected.IsWall)
+                {
+                    Vector3 newScale = new Vector3(0.15f, 0.15f, 1f);
+                    screenHit.collider.gameObject.transform.localScale = newScale;
+                }
+                if (Input.GetMouseButtonDown(0))
+                {
+                    skipMeshEdit = true;
+                    RotateToSide = sbyte.Parse(screenHit.collider.gameObject.name);
+                }
+            }
         }
 
         ray = MainCamera.ScreenPointToRay(Input.mousePosition);
 
-        if (Physics.Raycast(ray, out screenHit))
+        if (!skipMeshEdit && Physics.Raycast(ray, out screenHit))
         {
             int3 pos = BlockRaycast.GetBlockPos(screenHit, false);
-
+            pos = new int3(Mathf.Clamp(Mathf.Abs(pos.x), 0, ModelDimensions - 1), Mathf.Clamp(Mathf.Abs(pos.y), 0, ModelDimensions - 1), Mathf.Clamp(Mathf.Abs(pos.z), 0, ModelDimensions - 1));
             CoordinatesText.text =
-                $"x:{-pos.x}\ty:{pos.y}\tz:{-pos.z}";
-        } else
+                $"x:{pos.x}\ty:{pos.y}\tz:{pos.z}, normals: {screenHit.normal}";
+            MouseSelection.SetActive(true);
+            MouseSelection.transform.position = new Vector3(-pos.x + screenHit.normal.x * 0.5f, pos.y + screenHit.normal.y * 0.5f, -pos.z + screenHit.normal.z * 0.5f);
+
+            MouseSelection.transform.rotation = Quaternion.Euler(screenHit.normal.y * 90f, screenHit.normal.x * -90f + Mathf.Clamp(screenHit.normal.z * 180f, 0f, 180f), 0f);
+
+            //switch (screenHit.normal)
+            //{
+            //    case Vector3 {x: 0, y: 1, z: 0 }:   //up
+            //        break;
+            //    case Vector3 { x: 0, y: -1, z: 0 }: //down
+
+            //        break;
+            //    case Vector3 { x: -1, y: 1, z: 0 }: //left
+
+            //        break;
+            //    case Vector3 { x: 1, y: 1, z: 0 }:  //right
+
+            //        break;
+            //    case Vector3 { x: 0, y: 1, z: 1 }:  //forward
+
+            //        break;
+            //    case Vector3 { x: 0, y: 1, z: -1 }: //back
+
+            //        break;
+            //}
+            
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                Blocks[pos.x + pos.y * ModelDimensions + pos.z * ModelDimensions * ModelDimensions].Visible = false;
+                Blocks[pos.x + pos.y * ModelDimensions + pos.z * ModelDimensions * ModelDimensions].color = new Color(0f, 0f, 0f, 0f);
+                Job_UpdateChunk();
+            }
+        }
+        else
+        {
+            MouseSelection.SetActive(false);
             CoordinatesText.text = "x:-\ty:-\tz:-";
+        }
 
         if (Input.GetMouseButton(1))
         {
-            RotateToSide = -1;
+            RotateToSide = -50;
             //RotationSphere.transform.localRotation *= Quaternion.AngleAxis(Input.GetAxis("Mouse X") * MouseSensitivity, Vector3.up);
 
             float mouseSensitivity = MouseSensitivity;
@@ -121,15 +179,11 @@ public class VoxelEntity : MonoBehaviour
             newRot *= Quaternion.AngleAxis(Input.GetAxis("Mouse X") * mouseSensitivity, Vector3.up);
             newRot *= Quaternion.AngleAxis(Input.GetAxis("Mouse Y") * MouseSensitivity, Vector3.left);
 
-            if (newRot.eulerAngles.x > 280 || newRot.eulerAngles.x < 80)
-            {
-
-            } else
+            if (!(newRot.eulerAngles.x > 280 || newRot.eulerAngles.x < 80))
             {
                 newRot = RotationSphere.transform.rotation;
                 newRot *= Quaternion.AngleAxis(Input.GetAxis("Mouse X") * MouseSensitivity, Vector3.up);
             }
-
 
             RotationSphere.transform.rotation = Quaternion.Euler(newRot.eulerAngles.x, newRot.eulerAngles.y, 0f);
             RotationSphereMini.transform.rotation = Quaternion.Euler(newRot.eulerAngles.x, newRot.eulerAngles.y, 0f);
@@ -137,7 +191,7 @@ public class VoxelEntity : MonoBehaviour
         }
 
         var d = Input.GetAxis("Mouse ScrollWheel");
-        if (d > 0f && RotationSphere.transform.localScale.x < 80f)
+        if (d > 0f && RotationSphere.transform.localScale.x < 80f * (ModelDimensions/10))
         {
             Vector3 NewScale = new Vector3(
                 RotationSphere.transform.localScale.x + 5,
@@ -147,7 +201,7 @@ public class VoxelEntity : MonoBehaviour
             MainCamera.orthographicSize = RotationSphere.transform.localScale.x / 5f;
             // scroll up
         }
-        else if (d < 0f && RotationSphere.transform.localScale.x > 40f)
+        else if (d < 0f && RotationSphere.transform.localScale.x > 40f * (ModelDimensions / 16))
         {
             Vector3 NewScale = new Vector3(
                 RotationSphere.transform.localScale.x - 5,
@@ -168,7 +222,7 @@ public class VoxelEntity : MonoBehaviour
 
     void LateUpdate()
     {
-        RotationSphere.transform.position = Vector3.MoveTowards(RotationSphere.transform.position, new Vector3(-ModelSize/2, ModelSize/2, -ModelSize/2), 1f);
+        RotationSphere.transform.position = Vector3.MoveTowards(RotationSphere.transform.position, new Vector3(-ModelDimensions/2, ModelDimensions/2, -ModelDimensions/2), 1f);
         
         if (!Input.GetMouseButton(1) && LookAtMouse)
         {
@@ -182,26 +236,45 @@ public class VoxelEntity : MonoBehaviour
             Head.transform.rotation = Quaternion.Lerp(Head.transform.rotation, toRotation, Time.deltaTime);
         }
 
-        if (RotateToSide > -1)
+        if (RotateToSide > -50)
         {
             float RotationSpeed = 5f;
             Quaternion newRotation;
             float newXRotation = 0f;
-            if (RotateToSide < 4)
+            if (RotateToSide < 4 && RotateToSide >= 0)
                 newXRotation = -45f;
             else if (RotateToSide >= 4 && RotateToSide < 8)
                 newXRotation = 45f;
 
             float newYRotation = 0f;
-            switch(RotateToSide % 4)
+
+            if (RotateToSide >= 0)
             {
-                case 0: newYRotation = 270f; break;
-                case 1: newYRotation = 180f; break;
-                case 2: newYRotation = 90f; break;
-                case 3: newYRotation = 0f; break;
-                default:
-                    break;
+                switch (RotateToSide % 4)
+                {
+                    case 0: newYRotation = 270f; break;
+                    case 1: newYRotation = 180f; break;
+                    case 2: newYRotation = 90f; break;
+                    case 3: newYRotation = 0f; break;
+                    default:
+                        break;
+                }
+            } 
+            else
+            {
+                switch (RotateToSide)
+                {
+                    case -1: newYRotation = 315f; break;
+                    case -2: newYRotation = 225f; break;
+                    case -3: newYRotation = 135f; break;
+                    case -4: newYRotation = 45f; break;
+                    case -5: newXRotation = 90f; break;
+                    case -6: newXRotation = -90f; break;
+                    default:
+                        break;
+                }
             }
+
 
             newRotation = Quaternion.Euler(newXRotation, newYRotation, 0f);
             RotationSphere.transform.rotation = Quaternion.Lerp(RotationSphere.transform.rotation, newRotation, Time.deltaTime * RotationSpeed);
@@ -262,7 +335,7 @@ public class VoxelEntity : MonoBehaviour
     {
         if (Render_JobHandle.IsCompleted && !IsRendering)
         {
-            int allocsize = (int)math.pow(16, 3);
+            int allocsize = (int)math.pow(ModelDimensions, 3);
             // WORKER CHUNK (CURRENT)
             Native_blocks = new NativeArray<EntityBlockMetaData>(allocsize, Allocator.TempJob);
             Native_blocks.CopyFrom(Blocks);
@@ -283,7 +356,7 @@ public class VoxelEntity : MonoBehaviour
             var job = new Job_RenderChunk()
             {
                 // SIZE OF THE CHUNKS THAT WE ARE WORKING WITH
-                chunkSize = ModelSize,
+                chunkSize = ModelDimensions,
 
                 // STANDARD VOXEL MESHDATA
                 vertices = verts,
